@@ -42,13 +42,15 @@ def main(user_id, tag, filter=None):
                 if filter is not None:
                     if filter == 'rating>=4':
                         if entry.rating >= 4:
-                            playlist.append(entry)
+                            added = True
+                    elif filter == 'rating>=5':
+                        if entry.rating >= 5:
                             added = True
                 # No filtering
                 else:
-                    playlist.append(entry)
                     added = True
         if added:
+            playlist.append(entry)
             print "track added to playlist"
             print
             
