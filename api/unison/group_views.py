@@ -200,7 +200,7 @@ def get_tracks(master, gid):
     # For the users that can be modelled: predict their ratings.
     models = filter(lambda model: model.is_nontrivial(),
             [predict.Model(user) for user in group.users])
-    if models is not None:
+    if len(models) > 0:
         ratings = [model.score(points) for model in models]
         agg = predict.aggregate(ratings)
     else:
