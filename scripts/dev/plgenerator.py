@@ -15,8 +15,8 @@ Returns an unsorted list of tracks (DB-storage order).
 
 How it works?
 
-Compute the distance between the given track and another track of the user library (tagsimilarity.py)
-Select the track if the distance is small enough (TODO define "small enough")
+Compute the distance between the given track and another track of the user library
+Select the track if the distance is small enough
 (Once enough tracks are selected, return the playlist (TODO define "enough tracks"))
 
 
@@ -90,7 +90,12 @@ Define filters syntax/criterions
 # Size is the max playlist length (e.g. less tracks than given size).
 # For a track, the seed is the local_id
 def plgenerator(user_id, type, seed, filter=None, size=None, sort=None):
-    """ Generates a playlist based on the seed """
+    """ Generates a playlist based on the seed 
+    
+    ISSUE:
+    * if no filter is given, the playlist contains all the tracks. The less liked 
+      tracks and most far apart should be discarded. 
+    """
     
     playlist = list()
     store = utils.get_store()
@@ -161,6 +166,7 @@ def plgenerator(user_id, type, seed, filter=None, size=None, sort=None):
 
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
+# Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle
 def randomizePL(oldPL):
     newPL = list()
     for i in range(len(oldPL)):
