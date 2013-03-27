@@ -34,7 +34,7 @@ def get_playlist(gid):
     if type is None:
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "type of seed not specified")
-    elif type is None:
+    elif seed is None:
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "seed not specified")
     

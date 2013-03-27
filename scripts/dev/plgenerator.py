@@ -89,19 +89,33 @@ Define filters syntax/criterions
 
 # Size is the max playlist length (e.g. less tracks than given size).
 # For a track, the seed is the local_id
-def plgenerator(user_id, type, seed, filter=None, size=None, sort=None):
+def plgenerator(user_id, type, seed, filter='rating>=4', size=None, sort=None):
     """ Generates a playlist based on the seed 
     
     ISSUE:
     * if no filter is given, the playlist contains all the tracks. The less liked 
-      tracks and most far apart should be discarded. 
+      tracks and most far apart should be discarded. => default filter: rating>=4
     """
     
     playlist = list()
     store = utils.get_store()
     
+    if seed is None:
+        #TODO Handle error
+        return None
+    
     if (type == 'tag'):
         refvect, weight = utils.tag_features(seed)
+    elif (type == 'tags'):
+        for tag in seed:
+            vect, weight = utils.tag_features(seed)
+            tagsmatrix.append(vect)
+        tagsmatrix = list()
+        for i in xrange(len(tagsmatrix[0])):
+            sum = 0
+            for tagvect in tagsmatrix:
+                sum += tagvect[i]
+            refvect.append(sum)
     elif (type == 'track'):
         track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed))
         if (track is not None):
@@ -109,6 +123,9 @@ def plgenerator(user_id, type, seed, filter=None, size=None, sort=None):
         else:
             #TODO Handle error
             return None
+    elif type == 'tracks':
+        #TODO
+        print 'to be done'
     else:
         #TODO Handle error
         # unsupported seed type
