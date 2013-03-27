@@ -21,9 +21,9 @@ from storm.expr import Desc, In
 group_views = Blueprint('solo_views', __name__)
 
 
-@solo_views.route('/<int:gid>/playlist', methods=['GET'])
+@solo_views.route('/<int:uid>/playlist', methods=['GET'])
 @helpers.authenticate(with_user=True)
-def get_playlist(gid):
+def get_playlist(uid):
     """Get a playlist"""
     type = request.form['type']
     seed = request.form['seed']
@@ -38,7 +38,7 @@ def get_playlist(gid):
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "seed not specified")
     
-    playlist = plgenerator.plgenerator(gid, type, seed, filter, size, sort)
+    playlist = plgenerator.plgenerator(uid, type, seed, filter, size, sort)
     # Craft the JSON response.
     if playlist is not None:
         tracks = list()
@@ -50,3 +50,34 @@ def get_playlist(gid):
             })
         return jsonify(tracks=tracks)
     return None
+
+
+# Returns the list of playlists of user uid
+@solo_views.route('/<int:uid>/playlists', methods=['GET'])
+@helpers.authenticate(with_user=True)
+def get_playlists(uid):
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD,
+                "not yet available")
+    return None
+
+
+# Updates the playlist plid from user uid
+@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
+@helpers.authenticate(with_user=True)
+def update_playlist(uid, plid):
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD,
+                "not yet available")
+    return None
+
+
+# Disables the playlist plid from user uid
+@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
+@helpers.authenticate(with_user=True)
+def remove_playlist(uid, plid):
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD,
+                "not yet available")
+    return None
+
