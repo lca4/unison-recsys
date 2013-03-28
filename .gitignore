@@ -10,3 +10,7 @@ gen
 *.pyc
 *.swp
 config.yaml
+
+# Eclipse project files
+.project
+.pydevproject
