@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import random
+import json
 import libunison.utils as utils
 
 from math import fabs
@@ -89,50 +90,95 @@ Define filters syntax/criterions
 
 # Size is the max playlist length (e.g. less tracks than given size).
 # For a track, the seed is the local_id
-def plgenerator(user_id, type, seed, filter='rating>=4', size=None, sort=None):
+def plgenerator(user_id, entity): 
+                #seeds, filter='rating>=4', size=None, sort=None):
     """ Generates a playlist based on the seed 
     
     ISSUE:
     * if no filter is given, the playlist contains all the tracks. The less liked 
       tracks and most far apart should be discarded. => default filter: rating>=4
+      
+    IMPROVEMENT (to be used from now on):
+    The type of seed is no more explicitly given, it is integrated into the list
+    of seeds. The seeds are stored in a JSONObject of JSONObject tuples in the 
+    form {"type":<type>,"seed":<seed>}
     """
+    # In order to test my generator, I first implement it for the tags. The tracks
+    # will come later.
     
+    # Check the input
+    #TODO check user_id in DB?
+    if seeds is None:
+        #TODO Handle error
+        return None
+    entity = json.loads(seeds)
+    seeds = entity['seeds']
+    if seeds is None:
+        #TODO handle error
+        return None
+    
+    # Initiate some values
     playlist = list()
     store = utils.get_store()
+    tagsmatrix = list()
+    refvect = list()
     
-    if seed is None:
-        #TODO Handle error
-        return None
-    
-    if (type == 'tag'):
-        refvect, weight = utils.tag_features(seed)
-    elif (type == 'tags'):
-        for tag in seed:
+    for pair in seeds: # optimization possible, for e.g.: one JSONArray per type
+        type = pair['type']
+        seed = pair['seed']
+        if type == 'tag':
             vect, weight = utils.tag_features(seed)
-            tagsmatrix.append(vect)
-        tagsmatrix = list()
-        for i in xrange(len(tagsmatrix[0])):
-            sum = 0
-            for tagvect in tagsmatrix:
-                sum += tagvect[i]
-            refvect.append(sum)
-    elif (type == 'track'):
-        track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed))
-        if (track is not None):
-            refvect, weight = utils.track_features(track.track.features)
+        if type == 'track':
+            track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed))
+            if (track is not None):
+                vect, weight = utils.track_features(track.track.features)
+            else:
+                #TODO Handle error
+                vect = list()
         else:
-            #TODO Handle error
-            return None
-    elif type == 'tracks':
-        #TODO
-        print 'to be done'
-    else:
-        #TODO Handle error
-        # unsupported seed type
-        return None
+            #TODO handle error: undefined seed type
+            vect = list()
+        tagsmatrix.append(vect)
+        
+    for i in xrange(len(tagsmatrix[0])):
+        sum = 0
+        for tagvect in tagsmatrix: # moche, trouver qqch de plus raffiné
+            sum += tagvect[i]
+            refvect.append(sum)
     if refvect is None:
         #TODO Handle error
         return None
+    
+    # Previous implementation:
+    #===========================================================================
+    # if (type == 'tag'):
+    #    refvect, weight = utils.tag_features(seed)
+    # elif (type == 'tags'):
+    #    for tag in seed:
+    #        vect, weight = utils.tag_features(seed)
+    #        tagsmatrix.append(vect)
+    #    tagsmatrix = list()
+    #    for i in xrange(len(tagsmatrix[0])):
+    #        sum = 0
+    #        for tagvect in tagsmatrix:
+    #            sum += tagvect[i]
+    #        refvect.append(sum)
+    # elif (type == 'track'):
+    #    track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed))
+    #    if (track is not None):
+    #        refvect, weight = utils.track_features(track.track.features)
+    #    else:
+    #        #TODO Handle error
+    #        return None
+    # elif type == 'tracks':
+    #    #TODO
+    #    print 'to be done'
+    # else:
+    #    #TODO Handle error
+    #    # unsupported seed type
+    #    return None
+    #===========================================================================
+    
             
     # Fetch LibEntries
     #store = utils.get_store()

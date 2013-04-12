@@ -23,7 +23,7 @@ group_views = Blueprint('solo_views', __name__)
 
 @solo_views.route('/<int:uid>/playlist', methods=['GET'])
 @helpers.authenticate(with_user=True)
-def get_playlist(uid):
+def generate_playlist(uid):
     """Get a playlist"""
     type = request.form['type']
     seed = request.form['seed']
@@ -51,6 +51,22 @@ def get_playlist(uid):
         return jsonify(tracks=tracks)
     return None
 
+@solo_views.route('/<int:uid>/playlist', methods=['POST'])
+@helpers.authenticate(with_user=True)
+def create_playlist(uid):
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD,
+                "not yet available")
+    return None
+
+
+@solo_views.route('/<int:uid>/playlists/<int:pid>', methods=['GET'])
+@helpers.authenticate(with_user=True)
+def get_playlist(uid, pid):
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD,
+                "not yet available")
+    return None
 
 # Returns the list of playlists of user uid
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])

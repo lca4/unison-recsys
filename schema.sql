@@ -74,6 +74,7 @@ CREATE INDEX lib_entry_user_idx ON lib_entry(user_id);
 CREATE INDEX lib_entry_track_idx ON lib_entry(track_id);
 CREATE TRIGGER lib_entry_update_time_trigger BEFORE UPDATE
     ON lib_entry FOR EACH ROW EXECUTE PROCEDURE update_time_column();
+ALTER TABLE lib_entry ADD COLUMN listenings integer NOT NULL DEFAULT 0; -- Stores the number of times a track is played
 
 
 CREATE TYPE group_event_type
@@ -88,3 +89,43 @@ CREATE TABLE group_event (
 );
 CREATE INDEX group_event_group_idx ON group_event(group_id);
 CREATE INDEX group_event_creation_time_idx ON group_event(creation_time);
+
+-- Following tables are used for single-user mode
+CREATE TABLE playlist (
+  id             bigserial PRIMARY KEY,
+  author         bigint NOT NULL REFERENCES "user",
+  creation_time  timestamp NOT NULL DEFAULT now(),
+  update_time    timestamp NOT NULL DEFAULT now(),
+  title          text NOT NULL,
+  image          text, -- As a URL (user selectable, by default an image of a randomly picked up track in the playlist).
+  listeners      integer, -- Number of listeners (users who added this playlist to their own library).
+  tracks         text, -- JSONArray of lib_entry ids
+  size           integer NOT NULL DEFAULT 0,
+  avg_rating     real NOT NULL DEFAULT 0,
+  valid          boolean NOT NULL DEFAULT FALSE,
+  shared         boolean NOT NULL DEFAULT FALSE -- to other GroupStreamer users
+);
+CREATE INDEX playlist_size_idx ON playlist(size);
+CREATE TRIGGER playlist_update_time_trigger BEFORE UPDATE
+    ON playlist FOR EACH ROW EXECUTE PROCEDURE update_time_column();
+
+
+CREATE TABLE pllib_entry (
+  id             bigserial PRIMARY KEY,
+  creation_time  timestamp NOT NULL DEFAULT now(),
+  update_time    timestamp NOT NULL DEFAULT now(),
+  user_id        bigint NOT NULL REFERENCES "user",
+  playlist_id    bigint NOT NULL REFERENCES playlist,
+  local_id       bigint,
+  valid          boolean NOT NULL DEFAULT FALSE,
+  local          boolean NOT NULL DEFAULT FALSE,
+  sync           boolean NOT NULL DEFAULT FALSE, -- Should be True only if local is False and user_id is not the author
+  rating         integer NOT NULL DEFAULT 0,
+  comment        text
+);
+CREATE INDEX pllib_entry_user_idx ON pllib_entry(user_id);
+CREATE INDEX pllib_entry_playlist_idx ON pllib_entry(playlist_id);
+CREATE TRIGGER pllib_entry_update_time_trigger BEFORE UPDATE
+    ON pllib_entry FOR EACH ROW EXECUTE PROCEDURE update_time_column();
+
+
