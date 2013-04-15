@@ -40,6 +40,26 @@ class Group(Storm):
         self.is_active = is_active
 
 
+class AutoGroup(Storm):
+    __storm_table__ = 'auto_group'
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    updated = DateTime(name='update_time')
+    name = Unicode()
+    coordinates = Point()
+    master_id = Int(name='master')
+    is_active = Bool(name='active')
+    # Relationships
+    master = Reference(master_id, 'User.id')
+    users = ReferenceSet(id, 'User.group_id')
+    events = ReferenceSet(id, 'GroupEvent.group_id')
+
+    def __init__(self, name=None, is_active=False):
+        self.name = name
+        self.is_active = is_active
+
+
+
 class Track(Storm):
     __storm_table__ = 'track'
     id = Int(primary=True)
@@ -105,3 +125,29 @@ class GroupEvent(Storm):
         self.user = user
         self.event_type = event_type
         self.payload = payload
+
+
+#class Cluster(Storm):
+#    __storm_table__ = 'clusters'
+#    id = Int(primary=True)
+#    coordinates = Point()
+#    auto_group_id = Int()
+#    users_in_cluster_id = Int()
+#    # Relationships
+#    user = Reference(user_id, 'User.id')
+#    auto_group = Reference(auto_group_id, 'AutoGroup.id')
+#
+#    TODO: CONSTRUCTOR
+
+#class ClusterUserPair(Storm):
+#    __storm_table__ = 'cluster_user'
+#    id = Int(primary=True)                                         #TODO: CHECK
+#    cluster_id = Int(name='cluster_id')
+#    user_id = Int(name='user_id')
+#    # Relationships
+#    cluster = Reference(cluster_id, 'Cluster.id')
+#    user = Reference(user_id, 'User.id')
+#
+#
+#    TODO: CONSTRUCTOR
+
