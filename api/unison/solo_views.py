@@ -25,20 +25,19 @@ group_views = Blueprint('solo_views', __name__)
 @helpers.authenticate(with_user=True)
 def generate_playlist(uid):
     """Get a playlist"""
-    type = request.form['type']
-    seed = request.form['seed']
-    filter = request.form['filter']
-    size = request.form['size']
-    sort = request.form['sort']
+#     type = request.form['type']
+#     seed = request.form['seed']
+#     filter = request.form['filter']
+#     size = request.form['size']
+#     sort = request.form['sort']
+    seeds = request.form['seeds']
+    options = request.form['options'] # Can be missing
     
-    if type is None:
+    if seeds is None:
         raise helpers.BadRequest(errors.MISSING_FIELD,
-                "type of seed not specified")
-    elif seed is None:
-        raise helpers.BadRequest(errors.MISSING_FIELD,
-                "seed not specified")
+                "seeds are missing")
     
-    playlist = plgenerator.plgenerator(uid, type, seed, filter, size, sort)
+    playlist = plgenerator.plgenerator(uid, seeds, options)
     # Craft the JSON response.
     if playlist is not None:
         tracks = list()
