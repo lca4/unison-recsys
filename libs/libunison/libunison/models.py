@@ -13,14 +13,14 @@ class User(Storm):
     nickname = Unicode()
     group_id = Int()
     model = Unicode()
-    #coordinates = Point(name=location)
-    #updated = DateTime(name='location_timestamp')
-    #cluster_id = Int()
+    coordinates = Point(name=location)
+    updated = DateTime(name='location_timestamp')
+    cluster_id = Int()
 
     # Relationships
     group = Reference(group_id, 'Group.id')
     lib_entries = ReferenceSet(id, 'LibEntry.user_id')
-    #cluster = Reference(cluster_id, 'Cluster.id')
+    cluster = Reference(cluster_id, 'Cluster.id')
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -35,9 +35,9 @@ class Group(Storm):
     coordinates = Point()
     master_id = Int(name='master')
     is_active = Bool(name='active')
-    #password = Unicode()
-    #updated = DateTime(name='update_time')
-    #automatic = Bool()
+    password = Unicode()
+    updated = DateTime(name='update_time')
+    automatic = Bool()
 
     # Relationships
     master = Reference(master_id, 'User.id')
@@ -135,19 +135,13 @@ class GroupEvent(Storm):
         self.event_type = event_type
         self.payload = payload
 
-CREATE TABLE clusters (
-  id                bigserial PRIMARY KEY,
-  position          point NOT NULL,
-  auto_group_id     bigint REFERENCES "auto_group",
-  users_in_cluster  bigint
-);
-#class Cluster(Storm):
-#    __storm_table__ = 'cluster'
-#    id = Int(primary=True)
-#    coordinates = Point(name='location')
-#    group_id = Int()
-#    # Relationships
-#    group = Reference(group_id, 'Group.id')
+class Cluster(Storm):
+    __storm_table__ = 'cluster'
+    id = Int(primary=True)
+    coordinates = Point(name='location')
+    group_id = Int()
+    # Relationships
+    group = Reference(group_id, 'Group.id')
 
 #Not used anymore
 #class ClusterUserPair(Storm):

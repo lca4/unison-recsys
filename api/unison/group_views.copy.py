@@ -394,6 +394,15 @@ def send_suggest(user):
 
     #pseudo code :)
     # psql request on the DB: table clusters: for cluster_loc
+    cluster = g.store.find(Cluster, (Cluster.coordinates == cluster_loc))
+    if cluster is not None
+        raise helpers.BadRequest(errors.INVALID_TRACK,
+                "we are on the good way!")
+    else
+        raise helpers.BadRequest(errors.INVALID_TRACK,
+                "we couldn't retrieve the cluster!")
+
+
     # if (clusterID is None)
     #   create new cluster entry with cluster_loc in table clusters (the corresponding group will only be created when first user accepts suggestion)
     #   create new cluster_user pair with cluster.id and user.id in table cluster_user
