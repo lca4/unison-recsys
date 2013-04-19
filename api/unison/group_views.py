@@ -15,6 +15,8 @@ from libentry_views import set_rating
 from libunison.models import User, Group, Track, LibEntry, GroupEvent
 from operator import itemgetter
 from storm.expr import Desc, In
+#added by vincent, should be needed  after bug fix:
+from math import floor, fabs
 
 
 # Maximal number of groups returned when listing groups.
