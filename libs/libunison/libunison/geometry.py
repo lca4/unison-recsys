@@ -53,32 +53,32 @@ def map_location_on_grid(point):
     north = lat > 0
     east = lon > 0
     
-    lat = math.fabs(lat)
-    lon = math.fabs(lon)
+    lat = fabs(lat)
+    lon = fabs(lon)
 
     #convert into sexadecimal notation and round
-    lat_deg = math.floor(lat)
+    lat_deg = floor(lat)
     lat = (lat - lat_deg)*60
-    lat_min = math.floor(lat)
+    lat_min = floor(lat)
     lat = (lat - lat_min)*60
-    lat_sec = math.floor(lat)
+    lat_sec = floor(lat)
 
-    lon_deg = math.floor(lon)
+    lon_deg = floor(lon)
     lon = (lon - lon_deg)*60
-    lon_min = math.floor(lon)
+    lon_min = floor(lon)
     lon = (lon - lon_min)*60
-    lon_sec = math.floor(lon)
+    lon_sec = floor(lon)
 
     #rouding according to threshold:
-    if (lat_sec < LAT_THRESHOLD/2)
+    if (lat_sec < LAT_THRESHOLD/2):
         lat_sec = 0
-    elif (lat_sec < 3*LAT_THRESHOLD/2)
+    elif (lat_sec < 3*LAT_THRESHOLD/2):
         lat_sec = LAT_THRESHOLD
-    else
+    else:
         lat_sec = 0
         lat_min += 1
 
-    if (lon_sec > LON_THRESHOLD/2)
+    if (lon_sec > LON_THRESHOLD/2):
         lon_min += 1
     lon_sec = 0
 
@@ -86,15 +86,15 @@ def map_location_on_grid(point):
     lat = lat_min + (lat_sec / 60.0)
     lat = lat_deg + (lat / 60.0)
 
-    if not north
+    if not north:
         lat = -lat
 
     lon = lon_min + (lon_sec / 60.0)
     lon = lon_deg + (lon / 60.0)
 
-    if not east
+    if not east:
         lon = -lon
 
-    return geometry.Point(lat, lon)
+    return Point(lat, lon)
 
 

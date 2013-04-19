@@ -26,6 +26,9 @@ MAX_TRACKS = 5
 # Interval during which we don't play the same song again.
 ACTIVITY_INTERVAL = 60 * 60 * 5  # In seconds.
 
+# Minimum size of a cluster so that we make a suggestion.
+MIN_SUGGESTION_SIZE = 2
+
 group_views = Blueprint('group_views', __name__)
 
 
@@ -362,4 +365,53 @@ def leave_master(user, gid):
     if group.master != None and group.master != user:
         raise helpers.Unauthorized("you are not the master")
     group.master = None
+    return helpers.success()
+
+
+# added by Vincent and Louis
+@group_views.route('/suggestion', methods=['GET'])
+@helpers.authenticate(with_user=True)
+def send_suggest(user):
+    try:
+        uid = int(request.args['uid'])
+    except (KeyError, ValueError):
+        raise helpers.BadRequest(errors.MISSING_FIELD,
+                "cannot parse uid")
+    try:
+        lat = float(request.args['lat'])
+        lon = float(request.args['lon'])
+    except (KeyError, ValueError):
+        raise helpers.BadRequest(errors.MISSING_FIELD,
+                "cannot parse lat and lon")
+
+    # Get user's location to put him in a cluster.
+    user_loc = geometry.Point(lat, lon)
+    cluster_loc = geometry.map_location_on_grid(user_loc)
+
+    #TODO: look whether this cluster already exists
+    #   if it does, get the list of users already in this cluster then put the user un this cluster.
+    #   otherwise, add him in the cluster and send no suggestion.
+
+    #pseudo code :)
+    # psql request on the DB: table clusters: for cluster_loc
+#    cluster = g.store.find(Cluster, (Cluster.coordinates == cluster_loc))
+#    if cluster is not None:
+#        raise helpers.BadRequest(errors.INVALID_TRACK,
+#                "we are on the good way!")
+#    else:
+#        raise helpers.BadRequest(errors.INVALID_TRACK,
+#                "we couldn't retrieve the cluster!")
+
+
+    # if (clusterID is None)
+    #   create new cluster entry with cluster_loc in table clusters (the corresponding group will only be created when first user accepts suggestion)
+    #   create new cluster_user pair with cluster.id and user.id in table cluster_user
+    # else
+    #   if cluster.nbr_of_users > MIN_SUGGESTION_SIZE
+    #       users_list = cluster.users_list
+    #       cluster.users_list.add(user)
+    #       return suggestion with users_list
+    #   else
+    #       cluster.users_list.add(user)
+
     return helpers.success()
