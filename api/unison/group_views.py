@@ -31,6 +31,10 @@ ACTIVITY_INTERVAL = 60 * 60 * 5  # In seconds.
 # Minimum size of a cluster so that we make a suggestion.
 MIN_SUGGESTION_SIZE = 2
 
+#Added by vincent, should be removed after bug fix:
+LAT_THRESHOLD = 30 # seconds
+LON_THRESHOLD = 60 # seconds
+
 group_views = Blueprint('group_views', __name__)
 
 
