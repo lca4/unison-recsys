@@ -3,11 +3,20 @@
 
 import collections
 
-from math import atan2, cos, pi, sin, sqrt
+from math import atan2, cos, pi, sin, sqrt, floor, fabs
 
 # Mean earth radius in meters, according to
 # http://en.wikipedia.org/wiki/Earth_radius#Mean_radius
 EARTH_RADIUS = 6371009
+LAT_THRESHOLD = 30 # seconds
+#so if lat_sec bellongs to [0,15] => 0
+#   if lat_sec bellongs to [15,45] => 30
+#   if lat_sec bellongs to [45,60] => 60
+
+LON_THRESHOLD = 60 # seconds
+#so if lon_sec bellongs to [0,30] => 0
+#   if lon_sec bellongs to [30,60] => 60
+
 
 
 # Simple data structure to represent a point.
@@ -34,3 +43,58 @@ def distance(a, b, radius=EARTH_RADIUS):
 def deg_to_rad(angle):
     """Convert an angle from degree to radians."""
     return (2 * pi / 360) * angle
+
+#added by Vincent and Louis
+# point is a geometry.Point
+def map_location_on_grid(point):
+    lat = point.lat
+    lon = point.lon
+
+    north = lat > 0
+    east = lon > 0
+    
+    lat = fabs(lat)
+    lon = fabs(lon)
+
+    #convert into sexadecimal notation and round
+    lat_deg = floor(lat)
+    lat = (lat - lat_deg)*60
+    lat_min = floor(lat)
+    lat = (lat - lat_min)*60
+    lat_sec = floor(lat)
+
+    lon_deg = floor(lon)
+    lon = (lon - lon_deg)*60
+    lon_min = floor(lon)
+    lon = (lon - lon_min)*60
+    lon_sec = floor(lon)
+
+    #rouding according to threshold:
+    if (lat_sec < LAT_THRESHOLD/2):
+        lat_sec = 0
+    elif (lat_sec < 3*LAT_THRESHOLD/2):
+        lat_sec = LAT_THRESHOLD
+    else:
+        lat_sec = 0
+        lat_min += 1
+
+    if (lon_sec > LON_THRESHOLD/2):
+        lon_min += 1
+    lon_sec = 0
+
+    #get back to decimal notation:
+    lat = lat_min + (lat_sec / 60.0)
+    lat = lat_deg + (lat / 60.0)
+
+    if not north:
+        lat = -lat
+
+    lon = lon_min + (lon_sec / 60.0)
+    lon = lon_deg + (lon / 60.0)
+
+    if not east:
+        lon = -lon
+
+    return Point(lat, lon)
+
+
