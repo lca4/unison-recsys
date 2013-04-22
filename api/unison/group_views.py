@@ -12,7 +12,7 @@ import time
 from constants import errors, events
 from flask import Blueprint, request, g, jsonify
 from libentry_views import set_rating
-from libunison.models import User, Group, Track, LibEntry, GroupEvent
+from libunison.models import User, Group, Track, LibEntry, GroupEvent #, Cluster
 from operator import itemgetter
 from storm.expr import Desc, In
 #added by vincent, should be needed  after bug fix:
@@ -401,13 +401,13 @@ def send_suggest(user):
 
     #pseudo code :)
     # psql request on the DB: table clusters: for cluster_loc
-#    cluster = g.store.find(Cluster, (Cluster.coordinates == cluster_loc))
-#    if cluster is not None:
-#        raise helpers.BadRequest(errors.INVALID_TRACK,
-#                "we are on the good way!")
-#    else:
-#        raise helpers.BadRequest(errors.INVALID_TRACK,
-#                "we couldn't retrieve the cluster!")
+    cluster = g.store.find(Cluster, (Cluster.coordinates == cluster_loc))
+    if cluster is not None:
+        raise helpers.BadRequest(errors.INVALID_TRACK,
+                "we are on the good way!")
+    else:
+        raise helpers.BadRequest(errors.INVALID_TRACK,
+                "we couldn't retrieve the cluster!")
 
 
     # if (clusterID is None)
