@@ -12,11 +12,9 @@ import time
 from constants import errors, events
 from flask import Blueprint, request, g, jsonify
 from libentry_views import set_rating
-from libunison.models import User, Group, Track, LibEntry, GroupEvent #, Cluster
+from libunison.models import User, Group, Track, LibEntry, GroupEvent, Cluster
 from operator import itemgetter
 from storm.expr import Desc, In
-#added by vincent, should be needed  after bug fix:
-from math import floor, fabs
 
 
 # Maximal number of groups returned when listing groups.
@@ -31,9 +29,6 @@ ACTIVITY_INTERVAL = 60 * 60 * 5  # In seconds.
 # Minimum size of a cluster so that we make a suggestion.
 MIN_SUGGESTION_SIZE = 2
 
-#Added by vincent, should be removed after bug fix:
-LAT_THRESHOLD = 30 # seconds
-LON_THRESHOLD = 60 # seconds
 
 group_views = Blueprint('group_views', __name__)
 
@@ -392,8 +387,8 @@ def send_suggest(user):
 
     # Get user's location to put him in a cluster.
     user_loc = geometry.Point(lat, lon)
-#    cluster_loc = geometry.map_location_on_grid(user_loc)
-    cluster_loc = map_location_on_grid(user_loc)
+    cluster_loc = geometry.map_location_on_grid(user_loc)
+#    cluster_loc = map_location_on_grid(user_loc)
 
     #TODO: look whether this cluster already exists
     #   if it does, get the list of users already in this cluster then put the user un this cluster.
@@ -424,56 +419,3 @@ def send_suggest(user):
     return helpers.success()
 
 
-#added by Vincent and Louis. This Shouldn't be here but in geometry lib instead,
-#but that way doesn't work for now.
-# point is a geometry.Point
-def map_location_on_grid(point):
-    lat = point.lat
-    lon = point.lon
-
-    north = lat > 0
-    east = lon > 0
-    
-    lat = fabs(lat)
-    lon = fabs(lon)
-
-    #convert into sexadecimal notation and round
-    lat_deg = floor(lat)
-    lat = (lat - lat_deg)*60
-    lat_min = floor(lat)
-    lat = (lat - lat_min)*60
-    lat_sec = floor(lat)
-
-    lon_deg = floor(lon)
-    lon = (lon - lon_deg)*60
-    lon_min = floor(lon)
-    lon = (lon - lon_min)*60
-    lon_sec = floor(lon)
-
-    #rouding according to threshold:
-    if (lat_sec < LAT_THRESHOLD/2):
-        lat_sec = 0
-    elif (lat_sec < 3*LAT_THRESHOLD/2):
-        lat_sec = LAT_THRESHOLD
-    else:
-        lat_sec = 0
-        lat_min += 1
-
-    if (lon_sec > LON_THRESHOLD/2):
-        lon_min += 1
-    lon_sec = 0
-
-    #get back to decimal notation:
-    lat = lat_min + (lat_sec / 60.0)
-    lat = lat_deg + (lat / 60.0)
-
-    if not north:
-        lat = -lat
-
-    lon = lon_min + (lon_sec / 60.0)
-    lon = lon_deg + (lon / 60.0)
-
-    if not east:
-        lon = -lon
-
-    return geometry.Point(lat, lon)
