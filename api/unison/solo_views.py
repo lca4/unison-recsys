@@ -18,7 +18,7 @@ from operator import itemgetter
 from storm.expr import Desc, In
 
 
-group_views = Blueprint('solo_views', __name__)
+solo_views = Blueprint('solo_views', __name__)
 
 
 @solo_views.route('/<int:uid>/playlist', methods=['GET'])
