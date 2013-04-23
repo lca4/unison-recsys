@@ -21,7 +21,7 @@ from storm.expr import Desc, In
 solo_views = Blueprint('solo_views', __name__)
 
 
-@solo_views.route('/<int:uid>/playlist', methods=['GET'])
+@solo_views.route('/<int:uid>/playlist', methods=['POST'])
 @helpers.authenticate(with_user=True)
 def generate_playlist(uid):
     """Get a playlist"""
