@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 """Single-user-related views."""
 
 import datetime
@@ -109,7 +110,7 @@ def plgenerator(user_id, seeds, options):
         
     for i in xrange(len(tagsmatrix[0])):
         sum = 0
-        for tagvect in tagsmatrix: # moche, trouver qqch de plus raffiné
+        for tagvect in tagsmatrix: # ugly, find something better
             sum += tagvect[i]
             refvect.append(sum)
     if refvect is None:
