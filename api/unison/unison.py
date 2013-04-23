@@ -10,6 +10,7 @@ from storm.locals import create_database, Store
 from user_views import user_views
 from group_views import group_views
 from libentry_views import libentry_views
+from solo_views import solo_views
 
 
 app = Flask(__name__)

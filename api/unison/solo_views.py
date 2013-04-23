@@ -34,8 +34,7 @@ def generate_playlist(uid):
     options = request.form['options'] # Can be missing
     
     if seeds is None:
-        raise helpers.BadRequest(errors.MISSING_FIELD,
-                "seeds are missing")
+        raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
     
     playlist = plgenerator.plgenerator(uid, seeds, options)
     # Craft the JSON response.
@@ -50,49 +49,49 @@ def generate_playlist(uid):
         return jsonify(tracks=tracks)
     return None
 
-@solo_views.route('/<int:uid>/playlist', methods=['POST'])
-@helpers.authenticate(with_user=True)
-def create_playlist(uid):
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD,
-                "not yet available")
-    return None
-
-
-@solo_views.route('/<int:uid>/playlists/<int:pid>', methods=['GET'])
-@helpers.authenticate(with_user=True)
-def get_playlist(uid, pid):
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD,
-                "not yet available")
-    return None
-
-# Returns the list of playlists of user uid
-@solo_views.route('/<int:uid>/playlists', methods=['GET'])
-@helpers.authenticate(with_user=True)
-def list_playlists(uid):
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD,
-                "not yet available")
-    return None
-
-
-# Updates the playlist plid from user uid
-@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-@helpers.authenticate(with_user=True)
-def update_playlist(uid, plid):
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD,
-                "not yet available")
-    return None
-
-
-# Disables the playlist plid from user uid
-@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-@helpers.authenticate(with_user=True)
-def remove_playlist(uid, plid):
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD,
-                "not yet available")
-    return None
+# @solo_views.route('/<int:uid>/playlist', methods=['POST'])
+# @helpers.authenticate(with_user=True)
+# def create_playlist(uid):
+#     #TODO
+#     raise helpers.BadRequest(errors.MISSING_FIELD,
+#                 "not yet available")
+#     return None
+# 
+# 
+# @solo_views.route('/<int:uid>/playlists/<int:pid>', methods=['GET'])
+# @helpers.authenticate(with_user=True)
+# def get_playlist(uid, pid):
+#     #TODO
+#     raise helpers.BadRequest(errors.MISSING_FIELD,
+#                 "not yet available")
+#     return None
+# 
+# # Returns the list of playlists of user uid
+# @solo_views.route('/<int:uid>/playlists', methods=['GET'])
+# @helpers.authenticate(with_user=True)
+# def list_playlists(uid):
+#     #TODO
+#     raise helpers.BadRequest(errors.MISSING_FIELD,
+#                 "not yet available")
+#     return None
+# 
+# 
+# # Updates the playlist plid from user uid
+# @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
+# @helpers.authenticate(with_user=True)
+# def update_playlist(uid, plid):
+#     #TODO
+#     raise helpers.BadRequest(errors.MISSING_FIELD,
+#                 "not yet available")
+#     return None
+# 
+# 
+# # Disables the playlist plid from user uid
+# @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
+# @helpers.authenticate(with_user=True)
+# def remove_playlist(uid, plid):
+#     #TODO
+#     raise helpers.BadRequest(errors.MISSING_FIELD,
+#                 "not yet available")
+#     return None
 
