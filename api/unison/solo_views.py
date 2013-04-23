@@ -48,7 +48,7 @@ def generate_playlist(uid):
     return None
 
 # @solo_views.route('/<int:uid>/playlist', methods=['POST'])
-# @helpers.authenticate(with_user=True)
+# @helpers.authenticate()
 # def create_playlist(uid):
 #     #TODO
 #     raise helpers.BadRequest(errors.MISSING_FIELD,
@@ -66,7 +66,7 @@ def generate_playlist(uid):
 # 
 # Returns the list of playlists of user uid
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
-@helpers.authenticate(with_user=True)
+@helpers.authenticate()
 def list_playlists(uid):
     #TODO
     raise helpers.BadRequest(errors.MISSING_FIELD,
@@ -76,7 +76,7 @@ def list_playlists(uid):
 # 
 # # Updates the playlist plid from user uid
 # @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-# @helpers.authenticate(with_user=True)
+# @helpers.authenticate()
 # def update_playlist(uid, plid):
 #     #TODO
 #     raise helpers.BadRequest(errors.MISSING_FIELD,
@@ -86,7 +86,7 @@ def list_playlists(uid):
 # 
 # # Disables the playlist plid from user uid
 # @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-# @helpers.authenticate(with_user=True)
+# @helpers.authenticate()
 # def remove_playlist(uid, plid):
 #     #TODO
 #     raise helpers.BadRequest(errors.MISSING_FIELD,
