@@ -101,7 +101,9 @@ CREATE TABLE playlist (
   listeners      integer, -- Number of listeners (users who added this playlist to their own library).
   tracks         text, -- JSONArray of lib_entry ids
   size           integer NOT NULL DEFAULT 0,
-  avg_rating     real NOT NULL DEFAULT 0,
+  seeds          text NOT NULL, -- JSONObject
+  features       text NOT NULL, -- Base64 encoded
+  avg_rating     real NOT NULL DEFAULT -1,
   valid          boolean NOT NULL DEFAULT FALSE,
   shared         boolean NOT NULL DEFAULT FALSE -- to other GroupStreamer users
 );
@@ -118,9 +120,9 @@ CREATE TABLE pllib_entry (
   playlist_id    bigint NOT NULL REFERENCES playlist,
   local_id       bigint,
   valid          boolean NOT NULL DEFAULT FALSE,
-  local          boolean NOT NULL DEFAULT FALSE,
-  sync           boolean NOT NULL DEFAULT FALSE, -- Should be True only if local is False and user_id is not the author
-  rating         integer NOT NULL DEFAULT 0,
+  --local          boolean NOT NULL DEFAULT FALSE,
+  sync           boolean NOT NULL DEFAULT TRUE, -- If true, aks to keep this playlist in sync with the original one (user_id is not creator_id)
+  rating         integer NOT NULL DEFAULT -1,
   comment        text
 );
 CREATE INDEX pllib_entry_user_idx ON pllib_entry(user_id);

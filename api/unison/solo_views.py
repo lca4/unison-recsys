@@ -13,6 +13,7 @@ import time
 import json
 import libunison.utils as utils
 
+from constants import errors
 from flask import Blueprint, request, g, jsonify
 from operator import itemgetter
 from storm.expr import Desc, In
@@ -52,9 +53,28 @@ def generate_playlist(uid):
         return jsonify(tracks=tracks)
     return None
 
+
+"""
+Generates a playlist based on a given tag by looking for tracks with the 
+nearest tags.
+Returns an unsorted list of tracks (DB-storage order).
+
+
+How it works?
+
+Compute the distance between the given track and another track of the user library
+Select the track if the distance is small enough
+(Once enough tracks are selected, return the playlist (TODO define "enough tracks"))
+
+
+IDEAS
+Filter the playlist by user ratings, if available.
+Define filters syntax/criterions
+
+"""
 # Size is the max playlist length (e.g. less tracks than given size).
 # For a track, the seed is the local_id
-def plgenerator(user_id, seeds, options): 
+def plgenerator(user_id, seeds, options = None): 
                 #seeds, filter='rating>=4', size=None, sort=None):
     """ Generates a playlist based on the seed 
     
@@ -75,7 +95,9 @@ def plgenerator(user_id, seeds, options):
     if seeds is None:
         #TODO Handle error
         print 'plgenerator.plgenerator: seeds is Noe'
-        return None
+        raise Exception
+#         return None
+
 #     entity = json.loads(json)
 #     seedscontainer = entity['seeds']
 #     if seedscontainer is None:
@@ -118,6 +140,22 @@ def plgenerator(user_id, seeds, options):
         print 'plgenerator.plgenerator: refvect is None'
         return None
     
+    # Get options from input
+    if options is not None:
+        options = json.loads(options)
+        try:
+            filter = options.value('filter')
+        except:
+            filter = None
+        try:
+            size = option.value('size')
+        except:
+            size = None
+        try:
+            sort = option.value('sort')
+        except:
+            sort = None
+    
     # Fetch LibEntries
     entries = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
     for entry in entries:
@@ -127,7 +165,7 @@ def plgenerator(user_id, seeds, options):
             tagvect = utils.decode_features(entry.track.features)
             dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
             # Filters
-            filter = None #TODO pick from options
+#             filter = None #TODO pick from options
             if filter is not None:
                 if filter == 'rating>=4':
                     if entry.rating >= 4:
@@ -144,13 +182,14 @@ def plgenerator(user_id, seeds, options):
             print 'plgenerator.plgenerator: added entry = %s to playlist' % entry
 #            print "track added to playlist"
     
-    # Randomizes the order and removes tracks until the desired length is reached
+    # Randomizes the order
     playlist = randomizePL(playlist)
     
-    size = None #TODO pick from options
+#     size = None #TODO pick from options
+    # Removes tracks until the desired length is reached
     if size is not None:
         resized = False
-        while not resized:
+        while not resized: # improvement can be done here (use playlist.length() for eg.)
             for track in playlist:
                 if len(playlist) > size:
                     if track[1] < random.random():
@@ -159,12 +198,14 @@ def plgenerator(user_id, seeds, options):
                     resized = True 
     
     # Sorting
-    sort = None #TODO pick from options
+#     sort = None #TODO pick from options
     if sort is not None:
         if sort == 'ratings':
             playlist = sorted(playlist, key=lambda x: x[0].rating)
         elif sort == 'proximity':
             playlist = sorted(playlist, key=lambda x: x[1])
+            
+    #TODO insert into DB
 
     print 'plgenerator.plgenerator: playlist = %s' % playlist
     return playlist
