@@ -16,7 +16,6 @@ from libunison.models import User, Group, Track, LibEntry, GroupEvent, Cluster
 from operator import itemgetter
 from storm.expr import Desc, In
 
-
 # Maximal number of groups returned when listing groups.
 MAX_GROUPS = 10
 
@@ -28,7 +27,6 @@ ACTIVITY_INTERVAL = 60 * 60 * 5  # In seconds.
 
 # Minimum size of a cluster so that we make a suggestion.
 MIN_SUGGESTION_SIZE = 2
-
 
 group_views = Blueprint('group_views', __name__)
 
@@ -49,7 +47,7 @@ def list_groups():
         userloc = geometry.Point(lat, lon)
         key_fct = lambda r: geometry.distance(userloc, r.coordinates)
     groups = list()
-    rows = sorted(g.store.find(Group, Group.is_active), key=key_fct)
+    rows = sorted(g.store.find(Group, (Group.is_active) & (not Groups.automatic)), key=key_fct)
     for group in rows[:MAX_GROUPS]:
         groups.append({
           'gid': group.id,
@@ -385,37 +383,71 @@ def send_suggest(user):
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "cannot parse lat and lon")
 
+    try:
+        oldCid = int(request.args['oldcid'])
+        removeFromPreviousCluster(oldCid, uid)
+    except (KeyError, ValueError):
+        #Do nothing, the user was not already in a cluster
+        pass
+
+    #TODO: disable notification bar on app to be sure that the user is not in any group.
+    #TODO: only remove and add if necessary
+    
+
     # Get user's location to put him in a cluster.
     user_loc = geometry.Point(lat, lon)
     cluster_loc = geometry.map_location_on_grid(user_loc)
 #    cluster_loc = map_location_on_grid(user_loc)
 
-    #TODO: look whether this cluster already exists
-    #   if it does, get the list of users already in this cluster then put the user un this cluster.
-    #   otherwise, add him in the cluster and send no suggestion.
-
-    #pseudo code :)
-    # psql request on the DB: table clusters: for cluster_loc
     cluster = g.store.find(Cluster, (Cluster.coordinates == cluster_loc))
-    if cluster is not None:
-        raise helpers.BadRequest(errors.INVALID_TRACK,
-                "we are on the good way!")
+    if cluster is None:
+        cluster = Cluster(cluster_loc)
+        cluster = g.store.add(cluster)
+    
+    user.set(cluster_id=cluster.id)
+#    usersInCluster = g.store.find(User, (User.cluster_id == cluster.id))
+    usersInCluster = cluster.users_in_cluster
+    size = usersInCluster.count()
+    if size < MIN_SUGGESTION_SIZE:
+        return jsonify(suggestion=False, clusterId=cluster.id)
     else:
-        raise helpers.BadRequest(errors.INVALID_TRACK,
-                "we couldn't retrieve the cluster!")
+        #Create group for cluster if needed:
+        if cluster.group_id is None:
+            groupName = 'Autogroup (' + cluster_loc.lat + ', ' + cluster_loc.lon + ')'
+            clusterGroup = Group(grouName, is_active=True)
+            clusterGroup.automatic = True
+            #We need some values added by the database, like the ID.
+            clusterGroup = g.store.add(clusterGroup)
+            #tie the group with the cluster
+            cluster.set(group_id=clusterGroup.id)
+        #Retrieve users already in cluster:
+        users = list()
+        for user in usersInCluster:
+            users.append({
+              'nickname': user.nickname
+            })
+
+        #Create a dictionary representing the group as in list_groups: TODO: modularize
+        group = [{
+          'gid': clusterGroup.id,
+          'name': clusterGroup.name,
+          'nb_users': clusterGroup.users.count(),
+          'distance': None,
+        }]
+        #Create a dictionary representing the cluster:
+        clusterDict = [{
+                        'cid': cluster.id,
+                        'lat': cluster.coordinates.lat,
+                        'lon': cluster.coordinates.lon,
+                        'gid': cluster.group_id
+                      }]
+        return jsonify(suggestion=True, cluster=clusterDict, group=group, users=users)
 
 
-    # if (clusterID is None)
-    #   create new cluster entry with cluster_loc in table clusters (the corresponding group will only be created when first user accepts suggestion)
-    #   create new cluster_user pair with cluster.id and user.id in table cluster_user
-    # else
-    #   if cluster.nbr_of_users > MIN_SUGGESTION_SIZE
-    #       users_list = cluster.users_list
-    #       cluster.users_list.add(user)
-    #       return suggestion with users_list
-    #   else
-    #       cluster.users_list.add(user)
-
-    return helpers.success()
-
-
+def removeFromPreviousCluster(cid, uid):
+    cluster = g.store.get(cid)
+    usersInCluster = cluster.users_in_cluster
+    usersInCluster = usersInCluster.remove(g.store.get(uid))
+    cluster.set(users_in_cluster=usersInCluster)
+    return
+    
