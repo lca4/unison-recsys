@@ -10,12 +10,10 @@ import libunison.predict as predict
 import random
 import time
 
-from constants import errors, events
 from flask import Blueprint, request, g, jsonify
-from libentry_views import set_rating
-from libunison.models import User, Group, Track, LibEntry, GroupEvent
 from operator import itemgetter
 from storm.expr import Desc, In
+from plgenerator import plgenerator
 
 
 solo_views = Blueprint('solo_views', __name__)
