@@ -39,7 +39,7 @@ def generate_playlist(uid):
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
     
-    playlist = plgenerator.plgenerator(uid, seeds, options)
+    playlist = plgenerator(uid, seeds, options)
     # Craft the JSON response.
     if playlist is not None:
         tracks = list()
