@@ -20,7 +20,7 @@ from storm.expr import Desc, In
 
 from math import fabs
 from libunison.models import *
-from similarity import similarity
+#from similarity import similarity
 
 
 solo_views = Blueprint('solo_views', __name__)
