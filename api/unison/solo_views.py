@@ -22,7 +22,7 @@ solo_views = Blueprint('solo_views', __name__)
 
 
 @solo_views.route('/<int:uid>/playlist', methods=['POST'])
-@helpers.authenticate(with_user=True)
+@helpers.authenticate()
 def generate_playlist(uid):
     """Get a playlist"""
 #     type = request.form['type']
