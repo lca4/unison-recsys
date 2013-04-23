@@ -50,7 +50,7 @@ def plgenerator(user_id, seeds, options):
     #TODO check user_id in DB?
     if seeds is None:
         #TODO Handle error
-        print 'seeds is None'
+        print 'plgenerator.plgenerator: seeds is Noe'
         return None
 #     entity = json.loads(json)
 #     seedscontainer = entity['seeds']
@@ -67,6 +67,7 @@ def plgenerator(user_id, seeds, options):
     for entry in seeds.items(): # optimization possible, for e.g.: one JSONArray per type
         type = entry[0]
         seedslist = entry[1]
+        print 'plgenerator.plgenerator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
                 if type == 'tags':
@@ -90,7 +91,7 @@ def plgenerator(user_id, seeds, options):
             refvect.append(sum)
     if refvect is None:
         #TODO Handle error
-        print 'refvect is None'
+        print 'plgenerator.plgenerator: refvect is None'
         return None
     
     # Fetch LibEntries
@@ -102,6 +103,7 @@ def plgenerator(user_id, seeds, options):
             tagvect = utils.decode_features(entry.track.features)
             dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
             # Filters
+            filter = None #TODO pick from options
             if filter is not None:
                 if filter == 'rating>=4':
                     if entry.rating >= 4:
@@ -115,10 +117,13 @@ def plgenerator(user_id, seeds, options):
         if added:
             prob = 1 - dist  # Associate a probability
             playlist.append((entry, prob))
+            print 'plgenerator.plgenerator: added entry = %s to playlist' % entry
 #            print "track added to playlist"
     
     # Randomizes the order and removes tracks until the desired length is reached
     playlist = randomizePL(playlist)
+    
+    size = None #TODO pick from options
     if size is not None:
         resized = False
         while not resized:
@@ -130,12 +135,14 @@ def plgenerator(user_id, seeds, options):
                     resized = True 
     
     # Sorting
+    sort = None #TODO pick from options
     if sort is not None:
         if sort == 'ratings':
             playlist = sorted(playlist, key=lambda x: x[0].rating)
         elif sort == 'proximity':
             playlist = sorted(playlist, key=lambda x: x[1])
-            
+
+    print 'plgenerator.plgenerator: playlist = %s' % playlist
     return playlist
 
 

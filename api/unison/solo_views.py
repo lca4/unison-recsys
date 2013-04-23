@@ -24,16 +24,14 @@ solo_views = Blueprint('solo_views', __name__)
 @solo_views.route('/<int:uid>/playlist', methods=['POST'])
 @helpers.authenticate()
 def generate_playlist(uid):
-    """Get a playlist"""
-#     type = request.form['type']
-#     seed = request.form['seed']
-#     filter = request.form['filter']
-#     size = request.form['size']
-#     sort = request.form['sort']
+    """Generate a playlist from given seeds"""
     seeds = request.form['seeds']
+    print 'solo_views.generate_playlist: seeds = %s' % seeds
     options = request.form['options'] # Can be missing
+    print 'solo_views.generate_playlist: options = %s' % options
     
     if seeds is None:
+        print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
     
     playlist = plgenerator.plgenerator(uid, seeds, options)
@@ -66,14 +64,14 @@ def generate_playlist(uid):
 #                 "not yet available")
 #     return None
 # 
-# # Returns the list of playlists of user uid
-# @solo_views.route('/<int:uid>/playlists', methods=['GET'])
-# @helpers.authenticate(with_user=True)
-# def list_playlists(uid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD,
-#                 "not yet available")
-#     return None
+# Returns the list of playlists of user uid
+@solo_views.route('/<int:uid>/playlists', methods=['GET'])
+@helpers.authenticate(with_user=True)
+def list_playlists(uid):
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD,
+                "not yet available")
+    return None
 # 
 # 
 # # Updates the playlist plid from user uid
