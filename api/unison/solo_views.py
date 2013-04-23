@@ -70,7 +70,7 @@ def get_playlist(uid, pid):
 # Returns the list of playlists of user uid
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
 @helpers.authenticate(with_user=True)
-def get_playlists(uid):
+def list_playlists(uid):
     #TODO
     raise helpers.BadRequest(errors.MISSING_FIELD,
                 "not yet available")

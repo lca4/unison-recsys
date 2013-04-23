@@ -16,6 +16,7 @@ app = Flask(__name__)
 app.register_blueprint(user_views, url_prefix='/users')
 app.register_blueprint(group_views, url_prefix='/groups')
 app.register_blueprint(libentry_views, url_prefix='/libentries')
+app.register_blueprint(solo_views, url_prefix='/solo')
 
 
 @app.before_request
