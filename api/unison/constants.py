@@ -22,6 +22,8 @@ errors.UNAUTHORIZED = 0x0a
 errors.TRACKS_DEPLETED = 0x0b
 errors.MASTER_TAKEN = 0x0c
 errors.NO_CURRENT_TRACK = 0x0d
+#Added by Vincent:
+errors.MISSING_CLUSTER = 0x0e
 
 # Group events.
 events = Namespace()
