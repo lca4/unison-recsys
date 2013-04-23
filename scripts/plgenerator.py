@@ -2,10 +2,10 @@
 import argparse
 import random
 import json
-import libunison.utils as utils
 
 from math import fabs
 from libunison.models import *
+import libunison.utils as utils
 from similarity import similarity
 
 """
