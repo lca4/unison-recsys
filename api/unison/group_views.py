@@ -47,7 +47,7 @@ def list_groups():
         userloc = geometry.Point(lat, lon)
         key_fct = lambda r: geometry.distance(userloc, r.coordinates)
     groups = list()
-    rows = sorted(g.store.find(Group, (Group.is_active) & (not Groups.automatic)), key=key_fct)
+    rows = sorted(g.store.find(Group, (Group.is_active) & (Group.automatic == False)), key=key_fct) # "not" doesn't work...
     for group in rows[:MAX_GROUPS]:
         groups.append({
           'gid': group.id,
@@ -399,12 +399,13 @@ def send_suggest(user):
     cluster_loc = geometry.map_location_on_grid(user_loc)
 #    cluster_loc = map_location_on_grid(user_loc)
 
-    cluster = g.store.find(Cluster, (Cluster.coordinates == cluster_loc))
+    cluster = g.store.find(Cluster, Cluster.coordinates == cluster_loc).one()
     if cluster is None:
         cluster = Cluster(cluster_loc)
-        cluster = g.store.add(cluster)
+        cluster = g.store.add(cluster).one()
     
-    user.set(cluster_id=cluster.id)
+#    user.set(cluster_id=cluster.id)
+    user.cluster_id = cluster.id
 #    usersInCluster = g.store.find(User, (User.cluster_id == cluster.id))
     usersInCluster = cluster.users_in_cluster
     size = usersInCluster.count()
@@ -450,4 +451,4 @@ def removeFromPreviousCluster(cid, uid):
     usersInCluster = usersInCluster.remove(g.store.get(uid))
     cluster.set(users_in_cluster=usersInCluster)
     return
-    
+
