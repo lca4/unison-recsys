@@ -17,10 +17,10 @@ from constants import errors
 from flask import Blueprint, request, g, jsonify
 from operator import itemgetter
 from storm.expr import Desc, In
-#from plgenerator import plgenerator
+#from pl_generator import pl_generator
 
 from math import fabs
-from libunison.models import *
+from libunison.models import User, Playlist, PllibEntyr, TopTag
 #from similarity import similarity
 
 
@@ -40,7 +40,7 @@ def generate_playlist(uid):
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
     
-    playlist = plgenerator(uid, seeds, options)
+    playlist = pl_generator(uid, seeds, options)
     # Craft the JSON response.
     if playlist is not None:
         tracks = list()
@@ -74,7 +74,7 @@ Define filters syntax/criterions
 """
 # Size is the max playlist length (e.g. less tracks than given size).
 # For a track, the seed is the local_id
-def plgenerator(user_id, seeds, options = None): 
+def pl_generator(user_id, seeds, options = None): 
                 #seeds, filter='rating>=4', size=None, sort=None):
     """ Generates a playlist based on the seed 
     
@@ -94,7 +94,7 @@ def plgenerator(user_id, seeds, options = None):
     #TODO check user_id in DB?
     if seeds is None:
         #TODO Handle error
-        print 'plgenerator.plgenerator: seeds is Noe'
+        print 'solo_views.pl_generator: seeds is Noe'
         raise Exception
 #         return None
 
@@ -113,13 +113,14 @@ def plgenerator(user_id, seeds, options = None):
     for entry in seeds.items(): # optimization possible, for e.g.: one JSONArray per type
         type = entry[0]
         seedslist = entry[1]
-        print 'plgenerator.plgenerator: type = %s, seedslist = %s' %(type, seedslist)
+        print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
                 if type == 'tags':
                     vect, weight = utils.tag_features(seed)
                 if type == 'tracks':
-                    track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed))
+                    # TODO: update find condition: UNVALID!
+                    track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed)) # Can't work: seed is not the local_id !
                     if (track is not None):
                         vect, weight = utils.track_features(track.track.features)
                     else:
@@ -137,8 +138,8 @@ def plgenerator(user_id, seeds, options = None):
             refvect.append(sum)
     if refvect is None:
         #TODO Handle error
-        print 'plgenerator.plgenerator: refvect is None'
-        return None
+        print 'solo_views.pl_generator: refvect is None'
+        raise Exception
     
     # Get options from input
     if options is not None:
@@ -179,11 +180,11 @@ def plgenerator(user_id, seeds, options = None):
         if added:
             prob = 1 - dist  # Associate a probability
             playlist.append((entry, prob))
-            print 'plgenerator.plgenerator: added entry = %s to playlist' % entry
+            print 'solo_views.pl_generator: added entry = %s to playlist' % entry
 #            print "track added to playlist"
     
     # Randomizes the order
-    playlist = randomizePL(playlist)
+    playlist = pl_randomizer(playlist)
     
 #     size = None #TODO pick from options
     # Removes tracks until the desired length is reached
@@ -206,14 +207,15 @@ def plgenerator(user_id, seeds, options = None):
             playlist = sorted(playlist, key=lambda x: x[1])
             
     #TODO insert into DB
+    pldb = Playlist(user_id, 'playlist' + randint(0, 99), size, seeds, refvect)
 
-    print 'plgenerator.plgenerator: playlist = %s' % playlist
+    print 'solo_views.pl_generator: playlist = %s' % playlist
     return playlist
 
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
 # Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle
-def randomizePL(oldPL):
+def pl_randomizer(oldPL):
     newPL = list()
     for i in range(len(oldPL)):
         element = random.choice(oldPL)
@@ -267,3 +269,18 @@ def list_playlists(uid):
 #                 "not yet available")
 #     return None
 
+# Returns the list of tags
+@solo_views.route('/tags', methods=['GET'])
+@helpers.authenticate()
+def list_tags(uid):
+    
+    tags = list()
+    
+    store = utils.get_store()
+    entries = store.find(TopTag, None)
+    for entry in entries:
+        #TODO
+        print TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD,
+                "not yet available")
+    return None

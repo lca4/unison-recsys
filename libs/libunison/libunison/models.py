@@ -105,3 +105,71 @@ class GroupEvent(Storm):
         self.user = user
         self.event_type = event_type
         self.payload = payload
+
+class Playlist(Storm):
+    __storm_table__ = 'playlist'
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    updated = DateTime(name='update_time')
+    author_id = Int()
+    title = Unicode()
+    image = Unicode()
+    listeners = Int()
+    tracks = JSON()
+    size = Int()
+    seeds = JSON()
+    features = Unicode()
+    avg_rating = Float()
+    is_valid = Boolean(name='valid')
+    is_shared = Boolean(name='shared') 
+  
+    # Relationships
+    author = Reference(author_id, 'User.id')
+    
+    def __init__(self, author, title, size, seeds, features, avg_rating=None, is_valid=None, is_shared=None ):
+        self.author = author
+        self.title = title
+        self.size = size
+        self.seeds = seeds
+        self.features = features
+        self.avg_rating = avg_rating
+        self.is_valid = is_valid
+        self.is_shared = is_shared
+        
+class PllibEntry(Storm):
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    updated = DateTime(name='update_time')
+    user_id = Int()
+    playlist_id = Int()
+    local_id = Int()
+    is_valid = Bool(name='valid')
+    is_synced = Bool(name='sync')
+    rating = Int()
+    comment = Unicode()
+    
+    # References
+    user = Reference(user_id, 'User.id')
+    playlist = Reference(playlist_id, 'Playlist.id')
+
+    def __init__(self, user, playlist):
+        self.user = user
+        self.playlist = playlist
+
+class TopTag(Storm):
+    __storm_table__ = 'top_tag'
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    name = Unicode()
+    ref_id = Int()
+    count = Int()
+    url = Unicode()
+    features = Unicode()
+    
+    def __init__(self, name, ref_id, features, count=None, url=None):
+        self.name = name
+        self.ref_id = ref_id
+        self.features = features
+        self.count = count
+        self.url = url
+        

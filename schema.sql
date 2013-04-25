@@ -93,9 +93,9 @@ CREATE INDEX group_event_creation_time_idx ON group_event(creation_time);
 -- Following tables are used for single-user mode
 CREATE TABLE playlist (
   id             bigserial PRIMARY KEY,
-  author         bigint NOT NULL REFERENCES "user",
   creation_time  timestamp NOT NULL DEFAULT now(),
   update_time    timestamp NOT NULL DEFAULT now(),
+  author_id      bigint NOT NULL REFERENCES "user",
   title          text NOT NULL,
   image          text, -- As a URL (user selectable, by default an image of a randomly picked up track in the playlist).
   listeners      integer, -- Number of listeners (users who added this playlist to their own library).
@@ -130,4 +130,13 @@ CREATE INDEX pllib_entry_playlist_idx ON pllib_entry(playlist_id);
 CREATE TRIGGER pllib_entry_update_time_trigger BEFORE UPDATE
     ON pllib_entry FOR EACH ROW EXECUTE PROCEDURE update_time_column();
 
-
+CREATE TABLE top_tag (
+  id             bigserial PRIMARY KEY,
+  creation_time  timestamp NOT NULL DEFAULT now(),
+  name           text NOT NULL, -- from last.fm API
+  ref_id         bigint NOT NULL, -- hash of name
+  features       text NOT NULL, -- Base64 encoded
+  count          bigint NOT NULL DEFAULT 0, -- from last.fm API
+  url            text -- from last.fm API,
+);
+CREATE INDEX popular_tags_ref_id_idx ON popular_tags(ref_id);
