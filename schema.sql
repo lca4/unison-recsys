@@ -103,7 +103,7 @@ CREATE TABLE playlist (
   size           integer NOT NULL DEFAULT 0,
   seeds          text NOT NULL, -- JSONObject
   features       text NOT NULL, -- Base64 encoded
-  avg_rating     real NOT NULL DEFAULT -1,
+  avg_rating     real,
   valid          boolean NOT NULL DEFAULT FALSE,
   shared         boolean NOT NULL DEFAULT FALSE -- to other GroupStreamer users
 );
@@ -121,8 +121,8 @@ CREATE TABLE pllib_entry (
   local_id       bigint,
   valid          boolean NOT NULL DEFAULT FALSE,
   --local          boolean NOT NULL DEFAULT FALSE,
-  sync           boolean NOT NULL DEFAULT TRUE, -- If true, aks to keep this playlist in sync with the original one (user_id is not creator_id)
-  rating         integer NOT NULL DEFAULT -1,
+  sync           boolean NOT NULL DEFAULT FALSE, -- If true, aks to keep this playlist in sync with the original one (user_id is not creator_id)
+  rating         integer,
   comment        text
 );
 CREATE INDEX pllib_entry_user_idx ON pllib_entry(user_id);
@@ -136,7 +136,7 @@ CREATE TABLE top_tag (
   name           text NOT NULL, -- from last.fm API
   ref_id         bigint NOT NULL, -- hash of name
   features       text NOT NULL, -- Base64 encoded
-  count          bigint NOT NULL DEFAULT 0, -- from last.fm API
+  count          bigint, -- from last.fm API
   url            text -- from last.fm API,
 );
 CREATE INDEX popular_tags_ref_id_idx ON popular_tags(ref_id);

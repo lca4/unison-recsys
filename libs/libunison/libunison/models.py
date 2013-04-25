@@ -126,7 +126,7 @@ class Playlist(Storm):
     # Relationships
     author = Reference(author_id, 'User.id')
     
-    def __init__(self, author, title, size, seeds, features, avg_rating=None, is_valid=None, is_shared=None ):
+    def __init__(self, author, title, size, seeds, features, is_valid=True, is_shared=False, avg_rating=None):
         self.author = author
         self.title = title
         self.size = size
@@ -152,9 +152,11 @@ class PllibEntry(Storm):
     user = Reference(user_id, 'User.id')
     playlist = Reference(playlist_id, 'Playlist.id')
 
-    def __init__(self, user, playlist):
+    def __init__(self, user, playlist, is_valid=True, is_synced=True, rating=None):
         self.user = user
         self.playlist = playlist
+        self.is_valid = is_valid
+        self.is_synced = is_synced
 
 class TopTag(Storm):
     __storm_table__ = 'top_tag'

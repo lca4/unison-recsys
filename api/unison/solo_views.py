@@ -27,6 +27,10 @@ from libunison.models import User, Playlist, PllibEntyr, TopTag
 solo_views = Blueprint('solo_views', __name__)
 
 
+# Maximal number of groups returned when listing groups.
+MAX_PLAYLISTS = 10
+
+
 @solo_views.route('/<int:uid>/playlist', methods=['POST'])
 @helpers.authenticate()
 def generate_playlist(uid):
@@ -207,7 +211,11 @@ def pl_generator(user_id, seeds, options = None):
             playlist = sorted(playlist, key=lambda x: x[1])
             
     #TODO insert into DB
-    pldb = Playlist(user_id, 'playlist' + randint(0, 99), size, seeds, refvect)
+    pldb = Playlist(user_id, 'playlist_' + randint(0, 99), size, seeds, refvect)
+    g.store.add(pldb)
+    # Retrieve id from last insert to playlist table --> HOW?
+    pledb = PllibEntry(user_id, 0)
+    g.store.add(pledb)
 
     print 'solo_views.pl_generator: playlist = %s' % playlist
     return playlist
@@ -227,8 +235,7 @@ def pl_randomizer(oldPL):
 # @helpers.authenticate()
 # def create_playlist(uid):
 #     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD,
-#                 "not yet available")
+#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
 #     return None
 # 
 # 
@@ -236,18 +243,26 @@ def pl_randomizer(oldPL):
 # @helpers.authenticate(with_user=True)
 # def get_playlist(uid, pid):
 #     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD,
-#                 "not yet available")
+#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
 #     return None
 # 
 # Returns the list of playlists of user uid
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
 @helpers.authenticate()
 def list_playlists(uid):
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD,
-                "not yet available")
-    return None
+    playlists = list()
+    rows = sorted(g.store.find(Playlist, Playlist.is_valid))
+    for playlist in rows[:MAX_PLAYLISTS]:
+        playlists.append({
+          'pid': playlist.id,
+          'title': playlist.title#,
+          #'nb_users': group.users.count(),
+          #'distance': (geometry.distance(userloc, group.coordinates)
+          #        if userloc is not None else None),
+          #TODO
+        })
+    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return jsonify(playlists=playlists)
 # 
 # 
 # # Updates the playlist plid from user uid
@@ -255,8 +270,7 @@ def list_playlists(uid):
 # @helpers.authenticate()
 # def update_playlist(uid, plid):
 #     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD,
-#                 "not yet available")
+#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
 #     return None
 # 
 # 
@@ -265,8 +279,7 @@ def list_playlists(uid):
 # @helpers.authenticate()
 # def remove_playlist(uid, plid):
 #     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD,
-#                 "not yet available")
+#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
 #     return None
 
 # Returns the list of tags
@@ -281,6 +294,5 @@ def list_tags(uid):
     for entry in entries:
         #TODO
         print TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD,
-                "not yet available")
+    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
     return None
