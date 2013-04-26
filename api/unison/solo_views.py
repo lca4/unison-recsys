@@ -287,7 +287,7 @@ def list_playlists(uid):
 # Returns the list of tags
 @solo_views.route('/tags', methods=['GET'])
 @helpers.authenticate()
-def list_tags(uid):
+def list_tags():
     
     tags = list()
     

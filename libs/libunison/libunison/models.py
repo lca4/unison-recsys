@@ -120,8 +120,8 @@ class Playlist(Storm):
     seeds = JSON()
     features = Unicode()
     avg_rating = Float()
-    is_valid = Boolean(name='valid')
-    is_shared = Boolean(name='shared') 
+    is_valid = Bool(name='valid')
+    is_shared = Bool(name='shared') 
   
     # Relationships
     author = Reference(author_id, 'User.id')
@@ -137,6 +137,7 @@ class Playlist(Storm):
         self.is_shared = is_shared
         
 class PllibEntry(Storm):
+    __storm_table__ = 'pllib_entry'
     id = Int(primary=True)
     created = DateTime(name='creation_time')
     updated = DateTime(name='update_time')
