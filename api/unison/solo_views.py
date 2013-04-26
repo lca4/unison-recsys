@@ -17,11 +17,9 @@ from constants import errors
 from flask import Blueprint, request, g, jsonify
 from operator import itemgetter
 from storm.expr import Desc, In
-#from pl_generator import pl_generator
 
 from math import fabs
-from libunison.models import User, Playlist, PllibEntyr, TopTag
-#from similarity import similarity
+from libunison.models import User, Playlist, PllibEntry, TopTag
 
 
 solo_views = Blueprint('solo_views', __name__)
@@ -306,10 +304,10 @@ def list_tags(uid):
                  })
     
     
-    store = utils.get_store()
-    entries = store.find(TopTag, None)
-    for entry in entries:
-        #TODO
-        print TODO
+#     store = utils.get_store()
+#     entries = store.find(TopTag, None)
+#     for entry in entries:
+#         #TODO
+#         print TODO
     #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
     return jsonify(tags=tags)
