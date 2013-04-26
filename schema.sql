@@ -139,4 +139,4 @@ CREATE TABLE top_tag (
   count          bigint, -- from last.fm API
   url            text -- from last.fm API,
 );
-CREATE INDEX popular_tags_ref_id_idx ON popular_tags(ref_id);
+CREATE INDEX top_tag_ref_id_idx ON top_tag(ref_id);
