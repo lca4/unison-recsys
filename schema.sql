@@ -98,7 +98,7 @@ CREATE TABLE playlist (
   author_id      bigint NOT NULL REFERENCES "user",
   title          text NOT NULL,
   image          text, -- As a URL (user selectable, by default an image of a randomly picked up track in the playlist).
-  listeners      integer, -- Number of listeners (users who added this playlist to their own library).
+  listeners      integer DEFAULT 0, -- Number of listeners (users who added this playlist to their own library).
   tracks         text, -- JSONArray of lib_entry ids
   size           integer NOT NULL DEFAULT 0,
   seeds          text NOT NULL, -- JSONObject

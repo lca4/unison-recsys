@@ -251,14 +251,18 @@ def pl_randomizer(oldPL):
 @helpers.authenticate()
 def list_playlists(uid):
     playlists = list()
-    rows = sorted(g.store.find(Playlist, Playlist.is_valid))
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user_id == uid) & PllibEntry.is_valid))
     for playlist in rows[:MAX_PLAYLISTS]:
         playlists.append({
-          'pid': playlist.id,
-          'title': playlist.title#,
-          #'nb_users': group.users.count(),
-          #'distance': (geometry.distance(userloc, group.coordinates)
-          #        if userloc is not None else None),
+          'pid': playlist.playlist_id,
+          'title': playlist.title, # how is it fetched?
+          'image': playlistt.image,
+          'author': playlist.author,
+          'listeners': playlist.listeners,
+          'tracks': plyaylist.tracks,
+          'size': playlist.size,
+          'avg_rating': playlist.avg_rating,
+          'shared': playlist.is_shared
           #TODO
         })
     #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
@@ -289,10 +293,23 @@ def list_tags(uid):
     
     tags = list()
     
+    # TESTS
+    tags.append({
+                 'tid': 1,
+                 'name': 'rock',
+                 'ref_id': 1234567890
+                 })
+    tags.append({
+                 'tid': 2,
+                 'name': 'pop',
+                 'ref_id': 1357924680
+                 })
+    
+    
     store = utils.get_store()
     entries = store.find(TopTag, None)
     for entry in entries:
         #TODO
         print TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-    return None
+    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return jsonify(tags=tags)
