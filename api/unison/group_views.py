@@ -16,6 +16,7 @@ from libentry_views import set_rating
 from libunison.models import User, Group, Track, LibEntry, GroupEvent, Cluster
 from operator import itemgetter
 from storm.expr import Desc, In
+from storm.locals import AutoReload
 
 # Maximal number of groups returned when listing groups.
 MAX_GROUPS = 10
@@ -398,21 +399,26 @@ def send_suggest(user):
     # Get user's location to put him in a cluster.
     user_loc = geometry.Point(lat, lon)
     cluster_loc = geometry.map_location_on_grid(user_loc)
-#    cluster_loc = map_location_on_grid(user_loc)
-    clusterRequest = g.store.execute("SELECT * FROM \"cluster\" WHERE position ~= CAST ('(2,3)' AS point)")
+    clusterRequest = g.store.execute("SELECT * FROM \"cluster\" WHERE position ~= CAST ('("+str(cluster_loc.lat)+","+str(cluster_loc.lon)+")' AS point)")
     clusterResult = clusterRequest.get_one()
     clusterRequest.close() # close the cursor in DB
-    coordinatesList = re.split('[\(,\)]', clusterResult[1])
-    #CAUTION: format is ('', 'lat', 'lon', '')
-    cluster = Cluster(geometry.Point(float(coordinatesList[1]), float(coordinatesList[2])))
-    cluster.id = clusterResult[0]
-    cluster.group_id = clusterResult[2]
 
-#    if cluster is None:
-#        cluster = Cluster(cluster_loc)
-#        cluster = g.store.add(cluster).one()
+
+    if clusterResult is None:
+        cluster = Cluster(cluster_loc)
+        cluster = g.store.add(cluster)
+        cluster.id = AutoReload
+    else:
+        coordinatesList = re.split('[\(,\)]', clusterResult[1])
+    #CAUTION: format is ('', 'lat', 'lon', '')
+#    cluster = Cluster(geometry.Point(float(coordinatesList[1]), float(coordinatesList[2])))
+#    cluster.id = clusterResult[0]
+#    cluster.group_id = clusterResult[2]
+
+        #now we get the cluster by its ID because otherwise the store doesn't seem to be properly set for this cluster
+        cluster = g.store.get(Cluster, clusterResult[0] )
+
     
-#    user.set(cluster_id=cluster.id)
     user.cluster_id = cluster.id
 #    usersInCluster = g.store.find(User, (User.cluster_id == cluster.id))
     usersInCluster = cluster.users_in_cluster
@@ -422,35 +428,37 @@ def send_suggest(user):
     else:
         #Create group for cluster if needed:
         if cluster.group_id is None:
-            groupName = 'Autogroup (' + cluster_loc.lat + ', ' + cluster_loc.lon + ')'
-            clusterGroup = Group(grouName, is_active=True)
+            groupName = u'Autogroup (' + str(cluster_loc.lat) + ', ' + str(cluster_loc.lon) + ')'
+            clusterGroup = Group(groupName, is_active=True)
             clusterGroup.automatic = True
             #We need some values added by the database, like the ID.
             clusterGroup = g.store.add(clusterGroup)
+            clusterGroup.coordinates = geometry.Point(cluster_loc.lat, cluster_loc.lon) #this value cannot be null when inserted into the DB
+            clusterGroup.id = AutoReload
             #tie the group with the cluster
             cluster.group_id = clusterGroup.id
+        else:
+            clusterGroup = g.store.get(Group, cluster.group_id)
         #Retrieve users already in cluster:
         users = list()
         for user in usersInCluster:
-            users.append({
-              'nickname': user.nickname
-            })
+            users.append(user.nickname)
 
         #Create a dictionary representing the group as in list_groups: TODO: modularize
-        group = [{
+        groupDict = {
           'gid': clusterGroup.id,
           'name': clusterGroup.name,
           'nb_users': clusterGroup.users.count(),
           'distance': None,
-        }]
+        }
         #Create a dictionary representing the cluster:
-        clusterDict = [{
+        clusterDict = {
                         'cid': cluster.id,
                         'lat': cluster.coordinates.lat,
                         'lon': cluster.coordinates.lon,
                         'gid': cluster.group_id
-                      }]
-        return jsonify(suggestion=True, cluster=clusterDict, group=group, users=users)
+                      }
+        return jsonify(suggestion=True, cluster=clusterDict, group=groupDict, users=users)
 
 
 def removeFromPreviousCluster(cid, uid):
