@@ -399,23 +399,26 @@ def send_suggest(user):
     # Get user's location to put him in a cluster.
     user_loc = geometry.Point(lat, lon)
     cluster_loc = geometry.map_location_on_grid(user_loc)
-    clusterRequest = g.store.execute("SELECT * FROM \"cluster\" WHERE position ~= CAST ('(2,3)' AS point)")
+    clusterRequest = g.store.execute("SELECT * FROM \"cluster\" WHERE position ~= CAST ('("+str(cluster_loc.lat)+","+str(cluster_loc.lon)+")' AS point)")
     clusterResult = clusterRequest.get_one()
     clusterRequest.close() # close the cursor in DB
-    coordinatesList = re.split('[\(,\)]', clusterResult[1])
+
+
+    if clusterResult is None:
+        cluster = Cluster(cluster_loc)
+        cluster = g.store.add(cluster)
+        cluster.id = AutoReload
+    else:
+        coordinatesList = re.split('[\(,\)]', clusterResult[1])
     #CAUTION: format is ('', 'lat', 'lon', '')
 #    cluster = Cluster(geometry.Point(float(coordinatesList[1]), float(coordinatesList[2])))
 #    cluster.id = clusterResult[0]
 #    cluster.group_id = clusterResult[2]
 
-    #now we get the cluster by its ID because otherwise the store doesn't seem to be properly set for this cluster
-    cluster = g.store.get(Cluster, clusterResult[0] )
+        #now we get the cluster by its ID because otherwise the store doesn't seem to be properly set for this cluster
+        cluster = g.store.get(Cluster, clusterResult[0] )
 
-#    if cluster is None:
-#        cluster = Cluster(cluster_loc)
-#        cluster = g.store.add(cluster).one()
     
-#    user.set(cluster_id=cluster.id)
     user.cluster_id = cluster.id
 #    usersInCluster = g.store.find(User, (User.cluster_id == cluster.id))
     usersInCluster = cluster.users_in_cluster
@@ -431,9 +434,7 @@ def send_suggest(user):
             #We need some values added by the database, like the ID.
             clusterGroup = g.store.add(clusterGroup)
             clusterGroup.coordinates = geometry.Point(cluster_loc.lat, cluster_loc.lon) #this value cannot be null when inserted into the DB
-            print(clusterGroup.id)
             clusterGroup.id = AutoReload
-            print(clusterGroup.id)
             #tie the group with the cluster
             cluster.group_id = clusterGroup.id
         else:
