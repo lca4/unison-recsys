@@ -8,6 +8,7 @@ import libunison.geometry as geometry
 import libunison.predict as predict
 import random
 import time
+import re
 
 from constants import errors, events
 from flask import Blueprint, request, g, jsonify
@@ -398,11 +399,18 @@ def send_suggest(user):
     user_loc = geometry.Point(lat, lon)
     cluster_loc = geometry.map_location_on_grid(user_loc)
 #    cluster_loc = map_location_on_grid(user_loc)
+    clusterRequest = g.store.execute("SELECT * FROM \"cluster\" WHERE position ~= CAST ('(2,3)' AS point)")
+    clusterResult = clusterRequest.get_one()
+    clusterRequest.close() # close the cursor in DB
+    coordinatesList = re.split('[\(,\)]', clusterResult[1])
+    #CAUTION: format is ('', 'lat', 'lon', '')
+    cluster = Cluster(geometry.Point(float(coordinatesList[1]), float(coordinatesList[2])))
+    cluster.id = clusterResult[0]
+    cluster.group_id = clusterResult[2]
 
-    cluster = g.store.find(Cluster, Cluster.coordinates == cluster_loc).one()
-    if cluster is None:
-        cluster = Cluster(cluster_loc)
-        cluster = g.store.add(cluster).one()
+#    if cluster is None:
+#        cluster = Cluster(cluster_loc)
+#        cluster = g.store.add(cluster).one()
     
 #    user.set(cluster_id=cluster.id)
     user.cluster_id = cluster.id
@@ -420,7 +428,7 @@ def send_suggest(user):
             #We need some values added by the database, like the ID.
             clusterGroup = g.store.add(clusterGroup)
             #tie the group with the cluster
-            cluster.set(group_id=clusterGroup.id)
+            cluster.group_id = clusterGroup.id
         #Retrieve users already in cluster:
         users = list()
         for user in usersInCluster:
@@ -446,9 +454,9 @@ def send_suggest(user):
 
 
 def removeFromPreviousCluster(cid, uid):
-    cluster = g.store.get(cid)
+    cluster = g.store.get(Cluster, cid)
     usersInCluster = cluster.users_in_cluster
-    usersInCluster = usersInCluster.remove(g.store.get(uid))
+    usersInCluster = usersInCluster.remove(g.store.get(User, uid))
     cluster.set(users_in_cluster=usersInCluster)
     return
 
