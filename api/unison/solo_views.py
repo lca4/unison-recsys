@@ -249,19 +249,24 @@ def pl_randomizer(oldPL):
 @helpers.authenticate()
 def list_playlists(uid):
     playlists = list()
-    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user_id == uid) & PllibEntry.is_valid))
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user_id == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
     for playlist in rows[:MAX_PLAYLISTS]:
         playlists.append({
-          'pid': playlist.playlist_id,
-          'title': playlist.title, # how is it fetched?
-          'image': playlistt.image,
-          'author': playlist.author,
-          'listeners': playlist.listeners,
-          'tracks': plyaylist.tracks,
-          'size': playlist.size,
-          'avg_rating': playlist.avg_rating,
-          'shared': playlist.is_shared
-          #TODO
+          'pid': playlist.playlist.id,
+          'created': playlist.playlist.created,
+          'updated': playlist.playlist.updated,
+          'title': playlist.playlist.title,
+          'image': playlist.playlist.image,
+          'author_id': playlist.playlist.author.id,
+          'author_name': playlist.playlist.author.nickname,
+          'size': playlist.playlist.size,
+          'tracks': playlist.playlist.tracks,
+          'listeners': playlist.playlist.listeners,
+          'avg_rating': playlist.playlist.avg_rating,
+          'shared': playlist.playlist.is_shared,
+          'synced': playlist.is_synced,
+          'rating': playlist.rating,
+          'comment': playlist.comment
         })
     #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
     return jsonify(playlists=playlists)

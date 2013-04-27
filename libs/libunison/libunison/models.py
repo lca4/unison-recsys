@@ -126,6 +126,8 @@ class Playlist(Storm):
     # Relationships
     author = Reference(author_id, 'User.id')
     
+    #TODO add author_name
+    
     def __init__(self, author, title, size, seeds, features, is_valid=True, is_shared=False, avg_rating=None):
         self.author = author
         self.title = title

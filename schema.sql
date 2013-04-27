@@ -98,9 +98,9 @@ CREATE TABLE playlist (
   author_id      bigint NOT NULL REFERENCES "user",
   title          text NOT NULL,
   image          text, -- As a URL (user selectable, by default an image of a randomly picked up track in the playlist).
-  listeners      integer DEFAULT 0, -- Number of listeners (users who added this playlist to their own library).
-  tracks         text, -- JSONArray of lib_entry ids
   size           integer NOT NULL DEFAULT 0,
+  tracks         text, -- JSONArray of lib_entry ids
+  listeners      integer DEFAULT 0, -- Number of listeners (users who added this playlist to their own library).
   seeds          text NOT NULL, -- JSONObject
   features       text NOT NULL, -- Base64 encoded
   avg_rating     real,
@@ -121,7 +121,7 @@ CREATE TABLE pllib_entry (
   local_id       bigint,
   valid          boolean NOT NULL DEFAULT FALSE,
   --local          boolean NOT NULL DEFAULT FALSE,
-  sync           boolean NOT NULL DEFAULT FALSE, -- If true, aks to keep this playlist in sync with the original one (user_id is not creator_id)
+  sync           boolean NOT NULL DEFAULT FALSE, -- If true, asks to keep this playlist in sync with the original one (user_id is not creator_id)
   rating         integer,
   comment        text
 );
