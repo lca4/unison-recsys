@@ -374,23 +374,11 @@ def leave_master(user, gid):
 @helpers.authenticate(with_user=True)
 def send_suggest(user):
     try:
-        uid = int(request.args['uid'])
-    except (KeyError, ValueError):
-        raise helpers.BadRequest(errors.MISSING_FIELD,
-                "cannot parse uid")
-    try:
         lat = float(request.args['lat'])
         lon = float(request.args['lon'])
     except (KeyError, ValueError):
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "cannot parse lat and lon")
-
-    try:
-        oldCid = int(request.args['oldcid'])
-        removeFromPreviousCluster(oldCid, uid)
-    except (KeyError, ValueError):
-        #Do nothing, the user was not already in a cluster
-        pass
 
     #TODO: disable notification bar on app to be sure that the user is not in any group.
     #TODO: only remove and add if necessary
@@ -450,6 +438,9 @@ def send_suggest(user):
           'name': clusterGroup.name,
           'nb_users': clusterGroup.users.count(),
           'distance': None,
+          'lat': clusterGroup.coordinates.lat,
+          'lon': clusterGroup.coordinates.lon,
+          'automatic': True
         }
         #Create a dictionary representing the cluster:
         clusterDict = {
@@ -459,12 +450,4 @@ def send_suggest(user):
                         'gid': cluster.group_id
                       }
         return jsonify(suggestion=True, cluster=clusterDict, group=groupDict, users=users)
-
-
-def removeFromPreviousCluster(cid, uid):
-    cluster = g.store.get(Cluster, cid)
-    usersInCluster = cluster.users_in_cluster
-    usersInCluster = usersInCluster.remove(g.store.get(User, uid))
-    cluster.set(users_in_cluster=usersInCluster)
-    return
 
