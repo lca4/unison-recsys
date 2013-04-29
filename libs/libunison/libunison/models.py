@@ -13,7 +13,7 @@ class User(Storm):
     nickname = Unicode()
     group_id = Int()
     model = Unicode()
-    coordinates = Point(name=location)
+    coordinates = Point(name='location')
     updated = DateTime(name='location_timestamp')
     cluster_id = Int()
 
@@ -48,7 +48,7 @@ class Group(Storm):
         self.name = name
         self.is_active = is_active
 
-
+'''
 class AutoGroup(Storm):
     __storm_table__ = 'auto_group'
     id = Int(primary=True)
@@ -66,7 +66,7 @@ class AutoGroup(Storm):
     def __init__(self, name=None, is_active=False):
         self.name = name
         self.is_active = is_active
-
+'''
 
 
 class Track(Storm):
@@ -138,10 +138,14 @@ class GroupEvent(Storm):
 class Cluster(Storm):
     __storm_table__ = 'cluster'
     id = Int(primary=True)
-    coordinates = Point(name='location')
+    coordinates = Point(name='position')
     group_id = Int()
     # Relationships
     group = Reference(group_id, 'Group.id')
+    users_in_cluster = ReferenceSet(id, 'User.cluster_id')
+
+    def __init__(self, coordinates = None):
+        self.coordinates = coordinates
 
 #Not used anymore
 #class ClusterUserPair(Storm):
