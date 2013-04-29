@@ -438,6 +438,9 @@ def send_suggest(user):
           'name': clusterGroup.name,
           'nb_users': clusterGroup.users.count(),
           'distance': None,
+          'lat': clusterGroup.coordinates.lat,
+          'lon': clusterGroup.coordinates.lon,
+          'automatic': True
         }
         #Create a dictionary representing the cluster:
         clusterDict = {
