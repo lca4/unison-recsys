@@ -107,6 +107,7 @@ CREATE TABLE playlist (
   valid          boolean NOT NULL DEFAULT FALSE,
   shared         boolean NOT NULL DEFAULT FALSE -- to other GroupStreamer users
 );
+CREATE INDEX playlist_title_idx ON playlist(title);
 CREATE INDEX playlist_size_idx ON playlist(size);
 CREATE TRIGGER playlist_update_time_trigger BEFORE UPDATE
     ON playlist FOR EACH ROW EXECUTE PROCEDURE update_time_column();

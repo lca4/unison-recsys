@@ -7,7 +7,6 @@ import hashlib
 import helpers
 import libunison.geometry as geometry
 import libunison.predict as predict
-import random
 import time
 
 import json
@@ -19,7 +18,9 @@ from operator import itemgetter
 from storm.expr import Desc, In
 
 from math import fabs
-from libunison.models import User, Playlist, PllibEntry, TopTag
+from random import randint
+
+from libunison.models import User, LibEntry, Playlist, PllibEntry, TopTag
 
 
 solo_views = Blueprint('solo_views', __name__)
@@ -112,6 +113,8 @@ def pl_generator(user_id, seeds, options = None):
     tagsmatrix = list()
     refvect = list()
     
+    seeds = json.loads(seeds)
+    print 'solo_views.pl_generator: seeds = %s' %(seeds)
     for entry in seeds.items(): # optimization possible, for e.g.: one JSONArray per type
         type = entry[0]
         seedslist = entry[1]
@@ -185,35 +188,38 @@ def pl_generator(user_id, seeds, options = None):
             print 'solo_views.pl_generator: added entry = %s to playlist' % entry
 #            print "track added to playlist"
     
-    # Randomizes the order
-    playlist = pl_randomizer(playlist)
+    if playlist is not None:
     
-#     size = None #TODO pick from options
-    # Removes tracks until the desired length is reached
-    if size is not None:
-        resized = False
-        while not resized: # improvement can be done here (use playlist.length() for eg.)
-            for track in playlist:
-                if len(playlist) > size:
-                    if track[1] < random.random():
-                        playlist.remove(track)
-                else:
-                    resized = True 
-    
-    # Sorting
-#     sort = None #TODO pick from options
-    if sort is not None:
-        if sort == 'ratings':
-            playlist = sorted(playlist, key=lambda x: x[0].rating)
-        elif sort == 'proximity':
-            playlist = sorted(playlist, key=lambda x: x[1])
-            
-    #TODO insert into DB
-    pldb = Playlist(user_id, 'playlist_' + randint(0, 99), size, seeds, refvect)
-    g.store.add(pldb)
-    # Retrieve id from last insert to playlist table --> HOW?
-    pledb = PllibEntry(user_id, 0)
-    g.store.add(pledb)
+        # Randomizes the order
+        playlist = pl_randomizer(playlist)
+        
+    #     size = None #TODO pick from options
+        # Removes tracks until the desired length is reached
+        if size is not None:
+            resized = False
+            while not resized: # improvement can be done here (use playlist.length() for eg.)
+                for track in playlist:
+                    if len(playlist) > size:
+                        if track[1] < random.random():
+                            playlist.remove(track)
+                    else:
+                        resized = True 
+        
+        # Sorting
+    #     sort = None #TODO pick from options
+        if sort is not None:
+            if sort == 'ratings':
+                playlist = sorted(playlist, key=lambda x: x[0].rating)
+            elif sort == 'proximity':
+                playlist = sorted(playlist, key=lambda x: x[1])
+                
+        #TODO insert into DB
+        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect))
+        g.store.add(pldb)
+        # Retrieve id from last insert to playlist table --> HOW?
+        
+        pledb = PllibEntry(user_id, 0)
+        g.store.add(pledb)
 
     print 'solo_views.pl_generator: playlist = %s' % playlist
     return playlist

@@ -117,7 +117,7 @@ class Playlist(Storm):
     listeners = Int()
     tracks = JSON()
     size = Int()
-    seeds = JSON()
+    seeds = Unicode()
     features = Unicode()
     avg_rating = Float()
     is_valid = Bool(name='valid')
