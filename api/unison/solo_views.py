@@ -42,19 +42,8 @@ def generate_playlist(uid):
     if seeds is None:
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
-    
-    playlist = pl_generator(uid, seeds, options)
-    # Craft the JSON response.
-    if playlist is not None:
-        tracks = list()
-        for entry in playlist:
-            tracks.append({
-              'artist': entry.track.artist,
-              'title': entry.track.title,
-              'local_id': entry.local_id,
-            })
-        return jsonify(tracks=tracks)
-    return None
+
+    return pl_generator(uid, seeds, options)
 
 
 """
@@ -97,15 +86,8 @@ def pl_generator(user_id, seeds, options = None):
     #TODO check user_id in DB?
     if seeds is None:
         #TODO Handle error
-        print 'solo_views.pl_generator: seeds is Noe'
+        print 'solo_views.pl_generator: seeds is None'
         raise Exception
-#         return None
-
-#     entity = json.loads(json)
-#     seedscontainer = entity['seeds']
-#     if seedscontainer is None:
-#         #TODO handle error
-#         return None
     
     # Initiate some values
     playlist = list()
@@ -161,6 +143,10 @@ def pl_generator(user_id, seeds, options = None):
             sort = option.value('sort')
         except:
             sort = None
+    else:
+        filter = None
+        size = None
+        sort = None
     
     # Fetch LibEntries
     entries = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
@@ -171,7 +157,6 @@ def pl_generator(user_id, seeds, options = None):
             tagvect = utils.decode_features(entry.track.features)
             dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
             # Filters
-#             filter = None #TODO pick from options
             if filter is not None:
                 if filter == 'rating>=4':
                     if entry.rating >= 4:
@@ -193,8 +178,8 @@ def pl_generator(user_id, seeds, options = None):
         # Randomizes the order
         playlist = pl_randomizer(playlist)
         
-    #     size = None #TODO pick from options
         # Removes tracks until the desired length is reached
+        # Do it even is no size specifications? (not only random track order)
         if size is not None:
             resized = False
             while not resized: # improvement can be done here (use playlist.length() for eg.)
@@ -206,23 +191,48 @@ def pl_generator(user_id, seeds, options = None):
                         resized = True 
         
         # Sorting
-    #     sort = None #TODO pick from options
         if sort is not None:
             if sort == 'ratings':
                 playlist = sorted(playlist, key=lambda x: x[0].rating)
             elif sort == 'proximity':
                 playlist = sorted(playlist, key=lambda x: x[1])
                 
-        #TODO insert into DB
-        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect))
-        g.store.add(pldb)
-        # Retrieve id from last insert to playlist table --> HOW?
+        # Remove the probabilities
+        dirty = playlist
+        del playlist
+        for pair in dirty:
+            playlist.append(pair[0])
+            
+        # Keep only the relevant fields from the tracks
+        tracks = list()
+        for entry in playlist:
+            tracks.append({
+              'artist': entry.track.artist,
+              'title': entry.track.title,
+              'local_id': entry.local_id,
+            })
         
+        # Store the playlist in the database
+        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect), jsonify(tracks=tracks))
+        insert_id = g.store.add(pldb) # does it work?
+        # Retrieve id from last insert to playlist table --> HOW?
+        # Add it to the user library
         pledb = PllibEntry(user_id, 0)
         g.store.add(pledb)
-
-    print 'solo_views.pl_generator: playlist = %s' % playlist
-    return playlist
+        
+        # Craft JSON
+        playlistdescriptor = dict()
+        playlistdescriptor['tracks'] = tracks
+        # Add additional data
+        playlistdescriptor['gs_playlist_id'] = None # TODO
+        playlistdescriptor['author_id'] = user_id
+        playlistdescriptor['size'] = size
+        playlistdescriptor['gs_creation_time'] = None #TODO
+        playlistdescriptor['gs_update_time'] = None #TODO
+        
+        print 'solo_views.pl_generator: playlist = %s' % playlist
+        return playlistdescriptor
+    return None
 
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html

@@ -117,7 +117,7 @@ class Playlist(Storm):
     listeners = Int()
     tracks = JSON()
     size = Int()
-    seeds = Unicode()
+    seeds = JSON()
     features = Unicode()
     avg_rating = Float()
     is_valid = Bool(name='valid')
@@ -128,15 +128,16 @@ class Playlist(Storm):
     
     #TODO add author_name
     
-    def __init__(self, author, title, size, seeds, features, is_valid=True, is_shared=False, avg_rating=None):
+    def __init__(self, author, title, size, seeds, features, tracks, is_valid=True, is_shared=False, avg_rating=None):
         self.author = author
         self.title = title
         self.size = size
         self.seeds = seeds
         self.features = features
-        self.avg_rating = avg_rating
+        self.tracks = tracks
         self.is_valid = is_valid
         self.is_shared = is_shared
+        self.avg_rating = avg_rating
         
 class PllibEntry(Storm):
     __storm_table__ = 'pllib_entry'
@@ -155,9 +156,9 @@ class PllibEntry(Storm):
     user = Reference(user_id, 'User.id')
     playlist = Reference(playlist_id, 'Playlist.id')
 
-    def __init__(self, user, playlist, is_valid=True, is_synced=True, rating=None):
-        self.user = user
-        self.playlist = playlist
+    def __init__(self, user_id, playlist_id, is_valid=True, is_synced=True, rating=None):
+        self.user = user_id
+        self.playlist = playlist_id
         self.is_valid = is_valid
         self.is_synced = is_synced
 
