@@ -84,7 +84,7 @@ def pl_generator(user_id, seeds, options = None):
     
     # Check the input
     #TODO check user_id in DB?
-    if seeds is None:
+    if seeds is None or not seeds:
         #TODO Handle error
         print 'solo_views.pl_generator: seeds is None'
         raise Exception
@@ -119,17 +119,18 @@ def pl_generator(user_id, seeds, options = None):
             tagsmatrix.append(vect)
         
     for i in xrange(len(tagsmatrix[0])):
-        sum = 0
+        vsum = 0
         for tagvect in tagsmatrix: # ugly, find something better
-            sum += tagvect[i]
-            refvect.append(sum)
+            vsum += tagvect[i]
+            refvect.append(vsum)
     if refvect is None:
         #TODO Handle error
         print 'solo_views.pl_generator: refvect is None'
         raise Exception
     
     # Get options from input
-    if options is not None:
+    if options is not None or options:
+        print 'solo_views.pl_generator: options = %s' % options
         options = json.loads(options)
         try:
             filter = options.value('filter')
@@ -152,7 +153,7 @@ def pl_generator(user_id, seeds, options = None):
     entries = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
     for entry in entries:
         added = False
-        dist
+        dist=0
         if entry.track.features is not None:
             tagvect = utils.decode_features(entry.track.features)
             dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
@@ -173,7 +174,7 @@ def pl_generator(user_id, seeds, options = None):
             print 'solo_views.pl_generator: added entry = %s to playlist' % entry
 #            print "track added to playlist"
     
-    if playlist is not None:
+    if playlist is not None or playlist:
     
         # Randomizes the order
         playlist = pl_randomizer(playlist)
@@ -191,7 +192,7 @@ def pl_generator(user_id, seeds, options = None):
                         resized = True 
         
         # Sorting
-        if sort is not None:
+        if sort is not None or sort:
             if sort == 'ratings':
                 playlist = sorted(playlist, key=lambda x: x[0].rating)
             elif sort == 'proximity':
@@ -199,7 +200,7 @@ def pl_generator(user_id, seeds, options = None):
                 
         # Remove the probabilities
         dirty = playlist
-        del playlist
+        del playlist[:]
         for pair in dirty:
             playlist.append(pair[0])
             
@@ -215,6 +216,7 @@ def pl_generator(user_id, seeds, options = None):
         # Store the playlist in the database
         pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect), jsonify(tracks=tracks))
         insert_id = g.store.add(pldb) # does it work?
+        print 'solo_views.pl_generator: insert_id = %s' % insert_id
         # Retrieve id from last insert to playlist table --> HOW?
         # Add it to the user library
         pledb = PllibEntry(user_id, 0)
@@ -231,6 +233,7 @@ def pl_generator(user_id, seeds, options = None):
         playlistdescriptor['gs_update_time'] = None #TODO
         
         print 'solo_views.pl_generator: playlist = %s' % playlist
+        print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
         return playlistdescriptor
     return None
 
@@ -265,7 +268,7 @@ def pl_randomizer(oldPL):
 @helpers.authenticate()
 def list_playlists(uid):
     playlists = list()
-    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user_id == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
     for playlist in rows[:MAX_PLAYLISTS]:
         playlists.append({
           'pid': playlist.playlist.id,

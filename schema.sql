@@ -68,7 +68,8 @@ CREATE TABLE lib_entry (
   local_id       integer,
   valid          boolean NOT NULL DEFAULT FALSE,
   local          boolean NOT NULL DEFAULT FALSE,
-  rating         integer
+  rating         integer,
+  listenings     integer NOT NULL DEFAULT 0
 );
 CREATE INDEX lib_entry_user_idx ON lib_entry(user_id);
 CREATE INDEX lib_entry_track_idx ON lib_entry(track_id);
