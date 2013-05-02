@@ -123,13 +123,13 @@ def pl_generator(user_id, seeds, options = None):
         for tagvect in tagsmatrix: # ugly, find something better
             vsum += tagvect[i]
             refvect.append(vsum)
-    if refvect is None:
+    if refvect is None or not refvect:
         #TODO Handle error
         print 'solo_views.pl_generator: refvect is None'
         raise Exception
     
     # Get options from input
-    if options is not None or options:
+    if options is not None and options:
         print 'solo_views.pl_generator: options = %s' % options
         options = json.loads(options)
         try:
@@ -174,14 +174,14 @@ def pl_generator(user_id, seeds, options = None):
             print 'solo_views.pl_generator: added entry = %s to playlist' % entry
 #            print "track added to playlist"
     
-    if playlist is not None or playlist:
+    if playlist is not None and playlist:
     
         # Randomizes the order
         playlist = pl_randomizer(playlist)
         
         # Removes tracks until the desired length is reached
         # Do it even is no size specifications? (not only random track order)
-        if size is not None:
+        if size is not None and size:
             resized = False
             while not resized: # improvement can be done here (use playlist.length() for eg.)
                 for track in playlist:
@@ -192,7 +192,7 @@ def pl_generator(user_id, seeds, options = None):
                         resized = True 
         
         # Sorting
-        if sort is not None or sort:
+        if sort is not None and sort:
             if sort == 'ratings':
                 playlist = sorted(playlist, key=lambda x: x[0].rating)
             elif sort == 'proximity':
