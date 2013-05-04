@@ -8,14 +8,15 @@ import libunison.geometry as geometry
 import libunison.predict as predict
 import random
 import time
+import re
 
 from constants import errors, events
 from flask import Blueprint, request, g, jsonify
 from libentry_views import set_rating
-from libunison.models import User, Group, Track, LibEntry, GroupEvent
+from libunison.models import User, Group, Track, LibEntry, GroupEvent, Cluster
 from operator import itemgetter
 from storm.expr import Desc, In
-
+from storm.locals import AutoReload
 
 # Maximal number of groups returned when listing groups.
 MAX_GROUPS = 10
@@ -25,6 +26,9 @@ MAX_TRACKS = 5
 
 # Interval during which we don't play the same song again.
 ACTIVITY_INTERVAL = 60 * 60 * 5  # In seconds.
+
+# Minimum size of a cluster so that we make a suggestion.
+MIN_SUGGESTION_SIZE = 2
 
 group_views = Blueprint('group_views', __name__)
 
@@ -45,7 +49,7 @@ def list_groups():
         userloc = geometry.Point(lat, lon)
         key_fct = lambda r: geometry.distance(userloc, r.coordinates)
     groups = list()
-    rows = sorted(g.store.find(Group, Group.is_active), key=key_fct)
+    rows = sorted(g.store.find(Group, (Group.is_active) & (Group.automatic == False)), key=key_fct) # "not" doesn't work...
     for group in rows[:MAX_GROUPS]:
         groups.append({
           'gid': group.id,
@@ -363,3 +367,87 @@ def leave_master(user, gid):
         raise helpers.Unauthorized("you are not the master")
     group.master = None
     return helpers.success()
+
+
+# added by Vincent and Louis
+@group_views.route('/suggestion', methods=['GET'])
+@helpers.authenticate(with_user=True)
+def send_suggest(user):
+    try:
+        lat = float(request.args['lat'])
+        lon = float(request.args['lon'])
+    except (KeyError, ValueError):
+        raise helpers.BadRequest(errors.MISSING_FIELD,
+                "cannot parse lat and lon")
+
+    #TODO: disable notification bar on app to be sure that the user is not in any group.
+    #TODO: only remove and add if necessary
+    
+
+    # Get user's location to put him in a cluster.
+    user_loc = geometry.Point(lat, lon)
+    cluster_loc = geometry.map_location_on_grid(user_loc)
+    clusterRequest = g.store.execute("SELECT * FROM \"cluster\" WHERE position ~= CAST ('("+str(cluster_loc.lat)+","+str(cluster_loc.lon)+")' AS point)")
+    clusterResult = clusterRequest.get_one()
+    clusterRequest.close() # close the cursor in DB
+
+
+    if clusterResult is None:
+        cluster = Cluster(cluster_loc)
+        cluster = g.store.add(cluster)
+        cluster.id = AutoReload
+    else:
+        coordinatesList = re.split('[\(,\)]', clusterResult[1])
+    #CAUTION: format is ('', 'lat', 'lon', '')
+#    cluster = Cluster(geometry.Point(float(coordinatesList[1]), float(coordinatesList[2])))
+#    cluster.id = clusterResult[0]
+#    cluster.group_id = clusterResult[2]
+
+        #now we get the cluster by its ID because otherwise the store doesn't seem to be properly set for this cluster
+        cluster = g.store.get(Cluster, clusterResult[0] )
+
+    
+    user.cluster_id = cluster.id
+#    usersInCluster = g.store.find(User, (User.cluster_id == cluster.id))
+    usersInCluster = cluster.users_in_cluster
+    size = usersInCluster.count()
+    if size < MIN_SUGGESTION_SIZE:
+        return jsonify(suggestion=False, clusterId=cluster.id)
+    else:
+        #Create group for cluster if needed:
+        if cluster.group_id is None:
+            groupName = u'Autogroup (' + str(cluster_loc.lat) + ', ' + str(cluster_loc.lon) + ')'
+            clusterGroup = Group(groupName, is_active=True)
+            clusterGroup.automatic = True
+            #We need some values added by the database, like the ID.
+            clusterGroup = g.store.add(clusterGroup)
+            clusterGroup.coordinates = geometry.Point(cluster_loc.lat, cluster_loc.lon) #this value cannot be null when inserted into the DB
+            clusterGroup.id = AutoReload
+            #tie the group with the cluster
+            cluster.group_id = clusterGroup.id
+        else:
+            clusterGroup = g.store.get(Group, cluster.group_id)
+        #Retrieve users already in cluster:
+        users = list()
+        for user in usersInCluster:
+            users.append(user.nickname)
+
+        #Create a dictionary representing the group as in list_groups: TODO: modularize
+        groupDict = {
+          'gid': clusterGroup.id,
+          'name': clusterGroup.name,
+          'nb_users': clusterGroup.users.count(),
+          'distance': None,
+          'lat': clusterGroup.coordinates.lat,
+          'lon': clusterGroup.coordinates.lon,
+          'automatic': True
+        }
+        #Create a dictionary representing the cluster:
+        clusterDict = {
+                        'cid': cluster.id,
+                        'lat': cluster.coordinates.lat,
+                        'lon': cluster.coordinates.lon,
+                        'gid': cluster.group_id
+                      }
+        return jsonify(suggestion=True, cluster=clusterDict, group=groupDict, users=users)
+

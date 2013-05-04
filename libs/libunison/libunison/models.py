@@ -13,9 +13,14 @@ class User(Storm):
     nickname = Unicode()
     group_id = Int()
     model = Unicode()
+    coordinates = Point(name='location')
+    updated = DateTime(name='location_timestamp')
+    cluster_id = Int()
+
     # Relationships
     group = Reference(group_id, 'Group.id')
     lib_entries = ReferenceSet(id, 'LibEntry.user_id')
+    cluster = Reference(cluster_id, 'Cluster.id')
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -30,6 +35,10 @@ class Group(Storm):
     coordinates = Point()
     master_id = Int(name='master')
     is_active = Bool(name='active')
+    password = Unicode()
+    updated = DateTime(name='update_time')
+    automatic = Bool()
+
     # Relationships
     master = Reference(master_id, 'User.id')
     users = ReferenceSet(id, 'User.group_id')
@@ -38,6 +47,26 @@ class Group(Storm):
     def __init__(self, name=None, is_active=False):
         self.name = name
         self.is_active = is_active
+
+'''
+class AutoGroup(Storm):
+    __storm_table__ = 'auto_group'
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    updated = DateTime(name='update_time')
+    name = Unicode()
+    coordinates = Point()
+    master_id = Int(name='master')
+    is_active = Bool(name='active')
+    # Relationships
+    master = Reference(master_id, 'User.id')
+    users = ReferenceSet(id, 'User.group_id')
+    events = ReferenceSet(id, 'GroupEvent.group_id')
+
+    def __init__(self, name=None, is_active=False):
+        self.name = name
+        self.is_active = is_active
+'''
 
 
 class Track(Storm):
@@ -104,8 +133,22 @@ class GroupEvent(Storm):
         self.group = group
         self.user = user
         self.event_type = event_type
-        self.payload = payload
+        self.payload = payload          
 
+
+class Cluster(Storm):
+    __storm_table__ = 'cluster'
+    id = Int(primary=True)
+    coordinates = Point(name='position')
+    group_id = Int()
+    # Relationships
+    group = Reference(group_id, 'Group.id')
+    users_in_cluster = ReferenceSet(id, 'User.cluster_id')
+
+    def __init__(self, coordinates = None):
+        self.coordinates = coordinates
+
+        
 class Playlist(Storm):
     __storm_table__ = 'playlist'
     id = Int(primary=True)
