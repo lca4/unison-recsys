@@ -105,11 +105,13 @@ def pl_generator(user_id, seeds, options = None):
             for seed in seedslist:
                 if type == 'tags':
                     vect, weight = utils.tag_features(seed)
+                    print 'solo_views.pl_generator: added features for tag %s to refvect' %(seed)
                 if type == 'tracks':
                     # TODO: update find condition: UNVALID!
                     track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed)) # Can't work: seed is not the local_id !
                     if (track is not None):
                         vect, weight = utils.track_features(track.track.features)
+                        print 'solo_views.pl_generator: added features for track %s to refvect' %(track.track.title)
                     else:
                         #TODO Handle error
                         vect = list()
