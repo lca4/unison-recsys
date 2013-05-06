@@ -123,6 +123,7 @@ class GroupEvent(Storm):
       u'leave': u'leave',
       u'skip': u'skip',
       u'master': u'master',
+	  u'password': u'password',
     })
     payload = JSON()
     # Relationships

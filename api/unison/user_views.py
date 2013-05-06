@@ -130,6 +130,15 @@ def update_user_group(user, uid):
     if group is None:
         raise helpers.BadRequest(errors.INVALID_GROUP,
                 "group does not exist")
+	if group.password is not None:
+		try:
+			password = int(request.form['password'])
+			if password != group.password
+				raise helpers.Unauthorized(errors.INVALID_GROUP_PASSWORD,
+						"received an invalid group password")
+		except:
+			raise helpers.BadRequest(errors.MISSING_FIELD,
+					"cannot parse group password")
     if user.group != group:
         if user.group is not None:
             if user.group.master == user:
