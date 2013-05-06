@@ -64,3 +64,9 @@ class Unauthorized(werkzeug.exceptions.Unauthorized):
         super(Unauthorized, self).__init__(msg)
         self.error = errors.UNAUTHORIZED
         self.msg = msg
+        
+class Forbidden(werkzeug.exceptions.Forbidden):
+    def __init__(self, msg='access forbidden'):
+        super(Forbidden, self).__init__(msg)
+        self.error = errors.FORBIDDEN
+        self.msg = msg

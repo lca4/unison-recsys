@@ -83,35 +83,35 @@ def create_group():
 @group_views.route('/<int:gid>', methods=['PUT'])
 @helpers.authenticate(with_user=True)
 def put_new_password(user, gid):
-	"""Change the password for the group or sets one if there is one.
+    """Change the password for the group or sets one if there is one.
 	
-	We must decide if the users already in the group should be prompted for the new password.
+    We must decide if the users already in the group should be prompted for the new password.
 	
-	"""
+    """
 	
-	try:
-		password = request.form['password']
-	except (KeyrError, ValueError):
-		raise helpers.BadRequest(errors.MISSING_FIELD,
-			"group password is missing")
-	group.g.store.get(Group, gid)
+    try:
+        password = request.form['password']
+    except (KeyrError, ValueError):
+        raise helpers.BadRequest(errors.MISSING_FIELD,
+            "group password is missing")
+    group = g.store.get(Group, gid)
 
-	if group is None:
-		raise helpers.BadRequest(errors.INVALID_GROUP,
-			"group does not exist")
+    if group is None:
+        raise helpers.BadRequest(errors.INVALID_GROUP,
+            "group does not exist")
 
-	if user.id != group.master_id or group.automatic:
-		raise helpers.BadRequest(errors.UNAUTHORIZED,
-			"not allowed to change group password unless DJ")
+    if user.id != group.master_id or group.automatic:
+        raise helpers.BadRequest(errors.UNAUTHORIZED,
+            "not allowed to change group password unless DJ")
 	
-	group.password = password
+    group.password = password
 	#event = GroupEvent(user, user, events.PASSWORD, password)
 	#TODO check if this is correct
 	#g.store.add(event)
 	
-	return helpers.success()
-	
-	
+    return helpers.success()
+
+
 @group_views.route('/<int:gid>', methods=['GET'])
 @helpers.authenticate()
 def get_group_info(gid):
