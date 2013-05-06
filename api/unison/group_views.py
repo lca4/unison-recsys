@@ -221,9 +221,13 @@ def get_tracks(master, gid):
     remaining = filter(played_filter, g.store.find(LibEntry,
             (LibEntry.user == master) & (LibEntry.is_valid == True)
             & (LibEntry.is_local == True)))
-    if len(remaining) == 0:
-        raise helpers.NotFound(errors.TRACKS_DEPLETED,
-                'no more tracks to play')
+    if not remaining: # http://stackoverflow.com/questions/53513/python-what-is-the-best-way-to-check-if-a-list-is-empty
+        # Instead of removing the read tracks, reload all the tracks
+        remaining = g.store.find(LibEntry,
+            (LibEntry.user == master) & (LibEntry.is_valid == True)
+            & (LibEntry.is_local == True))
+        if not remaining:
+            raise helpers.NotFound(errors.TRACKS_DEPLETED, 'no tracks to play')
     # Partition tracks based on whether we can embed them in the latent space.
     with_feats = list()
     points = list()

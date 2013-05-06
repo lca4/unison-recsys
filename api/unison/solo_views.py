@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
+# author=Marc Bourqui
 """Single-user-related views."""
 
 import datetime
