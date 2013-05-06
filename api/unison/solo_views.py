@@ -122,10 +122,10 @@ def pl_generator(user_id, seeds, options = None):
             tagsmatrix.append(vect)
         
     for i in xrange(len(tagsmatrix[0])):
-        vsum = 0
+        sum = 0
         for tagvect in tagsmatrix: # ugly, find something better
-            vsum += tagvect[i]
-            refvect.append(vsum)
+            sum += tagvect[i]
+            refvect.append(sum)
     if refvect is None or not refvect:
         #TODO Handle error
         print 'solo_views.pl_generator: refvect is None'
@@ -159,7 +159,7 @@ def pl_generator(user_id, seeds, options = None):
         dist=0
         if entry.track.features is not None:
             tagvect = utils.decode_features(entry.track.features)
-            dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
+            dist = fabs(math.sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
             # Filters
             if filter is not None:
                 if filter == 'rating>=4':
