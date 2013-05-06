@@ -164,7 +164,8 @@ class Playlist(Storm):
     features = Unicode()
     avg_rating = Float()
     is_valid = Bool(name='valid')
-    is_shared = Bool(name='shared') 
+    is_shared = Bool(name='shared')
+	
   
     # Relationships
     author = Reference(author_id, 'User.id')
