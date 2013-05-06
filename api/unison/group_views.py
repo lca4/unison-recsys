@@ -80,7 +80,7 @@ def create_group():
 
 
 #Added by Louis for group password handling	
-@group_view.route('/<int:gid>', methods=['PUT'])
+@group_views.route('/<int:gid>', methods=['PUT'])
 @helpers.authenticate(with_user=True)
 def put_new_password(user, gid):
 	"""Change the password for the group or sets one if there is one.
@@ -100,9 +100,9 @@ def put_new_password(user, gid):
 		raise helpers.BadRequest(errors.INVALID_GROUP,
 			"group does not exist")
 
-	if user.id != group.master_id or group.automatic
+	if user.id != group.master_id or group.automatic:
 		raise helpers.BadRequest(errors.UNAUTHORIZED,
-			"not allowed to change group password unless DJ)
+			"not allowed to change group password unless DJ")
 	
 	group.password = password
 	#event = GroupEvent(user, user, events.PASSWORD, password)

@@ -133,7 +133,7 @@ def update_user_group(user, uid):
 	if group.password is not None:
 		try:
 			password = int(request.form['password'])
-			if password != group.password
+			if password != group.password:
 				raise helpers.Unauthorized(errors.INVALID_GROUP_PASSWORD,
 						"received an invalid group password")
 		except:
