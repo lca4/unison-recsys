@@ -10,12 +10,14 @@ from storm.locals import create_database, Store
 from user_views import user_views
 from group_views import group_views
 from libentry_views import libentry_views
+from solo_views import solo_views
 
 
 app = Flask(__name__)
 app.register_blueprint(user_views, url_prefix='/users')
 app.register_blueprint(group_views, url_prefix='/groups')
 app.register_blueprint(libentry_views, url_prefix='/libentries')
+app.register_blueprint(solo_views, url_prefix='/solo')
 
 
 @app.before_request

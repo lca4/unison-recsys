@@ -134,7 +134,8 @@ class GroupEvent(Storm):
         self.group = group
         self.user = user
         self.event_type = event_type
-        self.payload = payload
+        self.payload = payload          
+
 
 class Cluster(Storm):
     __storm_table__ = 'cluster'
@@ -148,11 +149,77 @@ class Cluster(Storm):
     def __init__(self, coordinates = None):
         self.coordinates = coordinates
 
-#Not used anymore
-#class ClusterUserPair(Storm):
-#    __storm_table__ = 'cluster_user'
-#    cluster_id = Int()
-#    user_id = Int(primary=True)
-#    # Relationships
-#    cluster = Reference(cluster_id, 'Cluster.id')
-#    user = Reference(user_id, 'User.id')
+        
+class Playlist(Storm):
+    __storm_table__ = 'playlist'
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    updated = DateTime(name='update_time')
+    author_id = Int()
+    title = Unicode()
+    image = Unicode()
+    listeners = Int()
+    tracks = JSON()
+    size = Int()
+    seeds = JSON()
+    features = Unicode()
+    avg_rating = Float()
+    is_valid = Bool(name='valid')
+    is_shared = Bool(name='shared') 
+  
+    # Relationships
+    author = Reference(author_id, 'User.id')
+    
+    #TODO add author_name
+    
+    def __init__(self, author, title, size, seeds, features, tracks, is_valid=True, is_shared=False, avg_rating=None):
+        self.author = author
+        self.title = title
+        self.size = size
+        self.seeds = seeds
+        self.features = features
+        self.tracks = tracks
+        self.is_valid = is_valid
+        self.is_shared = is_shared
+        self.avg_rating = avg_rating
+        
+class PllibEntry(Storm):
+    __storm_table__ = 'pllib_entry'
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    updated = DateTime(name='update_time')
+    user_id = Int()
+    playlist_id = Int()
+    local_id = Int()
+    is_valid = Bool(name='valid')
+    is_synced = Bool(name='sync')
+    rating = Int()
+    comment = Unicode()
+    
+    # References
+    user = Reference(user_id, 'User.id')
+    playlist = Reference(playlist_id, 'Playlist.id')
+
+    def __init__(self, user_id, playlist_id, is_valid=True, is_synced=True, rating=None):
+        self.user = user_id
+        self.playlist = playlist_id
+        self.is_valid = is_valid
+        self.is_synced = is_synced
+
+class TopTag(Storm):
+    __storm_table__ = 'top_tag'
+    id = Int(primary=True)
+    created = DateTime(name='creation_time')
+    name = Unicode()
+    ref_id = Int()
+    count = Int()
+    url = Unicode()
+    features = Unicode()
+    
+    def __init__(self, name, ref_id, features, count=None, url=None):
+        self.name = name
+        self.ref_id = ref_id
+        self.features = features
+        self.count = count
+        self.url = url
+        
