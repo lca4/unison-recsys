@@ -104,9 +104,10 @@ def put_new_password(user, gid):
 		raise helpers.BadRequest(errors.UNAUTHORIZED,
 			"not allowed to change group password unless DJ)
 	
-	event = GroupEvent(user, user, events.PASSWORD, password)
+	group.password = password
+	#event = GroupEvent(user, user, events.PASSWORD, password)
 	#TODO check if this is correct
-	g.store.add(event)
+	#g.store.add(event)
 	
 	return helpers.success()
 	
