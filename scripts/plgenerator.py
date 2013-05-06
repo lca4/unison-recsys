@@ -2,13 +2,31 @@
 import argparse
 import random
 import json
-import libunison.utils as utils
 
 from math import fabs
 from libunison.models import *
+import libunison.utils as utils
 from similarity import similarity
 
 """
+
+DO NOT USE ANYMORE
+
+DO NOT USE ANYMORE
+
+DO NOT USE ANYMORE
+
+DO NOT USE ANYMORE
+
+DO NOT USE ANYMORE
+
+DO NOT USE ANYMORE
+
+
+USE solo_views INSTEAD
+
+
+
 Generates a playlist based on a given tag by looking for tracks with the 
 nearest tags.
 Returns an unsorted list of tracks (DB-storage order).
@@ -26,66 +44,6 @@ Filter the playlist by user ratings, if available.
 Define filters syntax/criterions
 
 """
-
-
-# Size is the max playlist length (e.g. less tracks than given size).
-#===============================================================================
-# def generatePlFromTag(user_id, tag, filter=None, size=None, sort=None):
-#    
-#    playlist = list()
-#    
-#    refvect, weight = utils.tag_features(tag)
-#    print "vector associated with tag:"
-#    print refvect
-#    print
-#    
-#    # Fetch LibEntries
-#    store = utils.get_store()
-#    entries = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
-#    for entry in entries:
-#        added = False
-#        dist
-#        if entry.track.features is not None:
-#            tagvect = utils.decode_features(entry.track.features)
-#            dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
-#            # Filters
-#            if filter is not None:
-#                if filter == 'rating>=4':
-#                    if entry.rating >= 4:
-#                        added = True
-#                elif filter == 'rating>=5':
-#                    if entry.rating >= 5:
-#                        added = True
-#            # No filtering
-#            else:
-#                added = True
-#        if added:
-#            prob = 1 - dist  # Associate a probability
-#            playlist.append((entry, prob))
-#            print "track added to playlist"
-#            print
-#    
-#    # Randomizes the order and removes tracks until the desired length is reached
-#    playlist = randomizePL(playlist)
-#    if size is not None:
-#        resized = False
-#        while not resized:
-#            for track in playlist:
-#                if len(playlist) > size:
-#                    if track[1] < random.random():
-#                        playlist.remove(track)
-#                else:
-#                    resized = True 
-#    
-#    # Sorting
-#    if sort is not None:
-#        if sort == 'ratings':
-#            playlist = sorted(playlist, key=lambda x: x[0].rating)
-#        elif sort == 'proximity':
-#            playlist = sorted(playlist, key=lambda x: x[1])
-#            
-#    return playlist
-#===============================================================================
 
 
 # Size is the max playlist length (e.g. less tracks than given size).
@@ -110,6 +68,7 @@ def plgenerator(user_id, seeds, options):
     #TODO check user_id in DB?
     if seeds is None:
         #TODO Handle error
+        print 'plgenerator.plgenerator: seeds is Noe'
         return None
 #     entity = json.loads(json)
 #     seedscontainer = entity['seeds']
@@ -123,9 +82,11 @@ def plgenerator(user_id, seeds, options):
     tagsmatrix = list()
     refvect = list()
     
+    seeds = json.loads(seeds)
     for entry in seeds.items(): # optimization possible, for e.g.: one JSONArray per type
         type = entry[0]
         seedslist = entry[1]
+        print 'plgenerator.plgenerator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
                 if type == 'tags':
@@ -147,43 +108,13 @@ def plgenerator(user_id, seeds, options):
         for tagvect in tagsmatrix: # moche, trouver qqch de plus raffiné
             sum += tagvect[i]
             refvect.append(sum)
+        #TODO normalize refvect
     if refvect is None:
         #TODO Handle error
+        print 'plgenerator.plgenerator: refvect is None'
         return None
     
-    # Previous implementation:
-    #===========================================================================
-    # if (type == 'tag'):
-    #    refvect, weight = utils.tag_features(seed)
-    # elif (type == 'tags'):
-    #    for tag in seed:
-    #        vect, weight = utils.tag_features(seed)
-    #        tagsmatrix.append(vect)
-    #    tagsmatrix = list()
-    #    for i in xrange(len(tagsmatrix[0])):
-    #        sum = 0
-    #        for tagvect in tagsmatrix:
-    #            sum += tagvect[i]
-    #        refvect.append(sum)
-    # elif (type == 'track'):
-    #    track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed))
-    #    if (track is not None):
-    #        refvect, weight = utils.track_features(track.track.features)
-    #    else:
-    #        #TODO Handle error
-    #        return None
-    # elif type == 'tracks':
-    #    #TODO
-    #    print 'to be done'
-    # else:
-    #    #TODO Handle error
-    #    # unsupported seed type
-    #    return None
-    #===========================================================================
-    
-            
     # Fetch LibEntries
-    #store = utils.get_store()
     entries = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
     for entry in entries:
         added = False
@@ -191,7 +122,9 @@ def plgenerator(user_id, seeds, options):
         if entry.track.features is not None:
             tagvect = utils.decode_features(entry.track.features)
             dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
+            #TODO normalize
             # Filters
+            filter = None #TODO pick from options
             if filter is not None:
                 if filter == 'rating>=4':
                     if entry.rating >= 4:
@@ -205,11 +138,12 @@ def plgenerator(user_id, seeds, options):
         if added:
             prob = 1 - dist  # Associate a probability
             playlist.append((entry, prob))
-#            print "track added to playlist"
-#            print
+            print 'plgenerator.plgenerator: added entry = %s to playlist' % entry
     
     # Randomizes the order and removes tracks until the desired length is reached
     playlist = randomizePL(playlist)
+    
+    size = None #TODO pick from options
     if size is not None:
         resized = False
         while not resized:
@@ -221,12 +155,14 @@ def plgenerator(user_id, seeds, options):
                     resized = True 
     
     # Sorting
+    sort = None #TODO pick from options
     if sort is not None:
         if sort == 'ratings':
             playlist = sorted(playlist, key=lambda x: x[0].rating)
         elif sort == 'proximity':
             playlist = sorted(playlist, key=lambda x: x[1])
-            
+
+    print 'plgenerator.plgenerator: playlist = %s' % playlist
     return playlist
 
 

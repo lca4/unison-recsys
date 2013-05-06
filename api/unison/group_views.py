@@ -57,6 +57,7 @@ def list_groups():
           'nb_users': group.users.count(),
           'distance': (geometry.distance(userloc, group.coordinates)
                   if userloc is not None else None),
+		  'password': group.password != None,
         })
     return jsonify(groups=groups)
 
@@ -78,6 +79,39 @@ def create_group():
     return list_groups()
 
 
+#Added by Louis for group password handling	
+@group_view.route('/<int:gid>', methods=['PUT'])
+@helpers.authenticate(with_user=True)
+def put_new_password(user, gid):
+	"""Change the password for the group or sets one if there is one.
+	
+	We must decide if the users already in the group should be prompted for the new password.
+	
+	"""
+	
+	try:
+		password = request.form['password']
+	except (KeyrError, ValueError):
+		raise helpers.BadRequest(errors.MISSING_FIELD,
+			"group password is missing")
+	group.g.store.get(Group, gid)
+
+	if group is None:
+		raise helpers.BadRequest(errors.INVALID_GROUP,
+			"group does not exist")
+
+	if user.id != group.master_id or group.automatic
+		raise helpers.BadRequest(errors.UNAUTHORIZED,
+			"not allowed to change group password unless DJ)
+	
+	group.password = password
+	#event = GroupEvent(user, user, events.PASSWORD, password)
+	#TODO check if this is correct
+	#g.store.add(event)
+	
+	return helpers.success()
+	
+	
 @group_views.route('/<int:gid>', methods=['GET'])
 @helpers.authenticate()
 def get_group_info(gid):
@@ -187,9 +221,13 @@ def get_tracks(master, gid):
     remaining = filter(played_filter, g.store.find(LibEntry,
             (LibEntry.user == master) & (LibEntry.is_valid == True)
             & (LibEntry.is_local == True)))
-    if len(remaining) == 0:
-        raise helpers.NotFound(errors.TRACKS_DEPLETED,
-                'no more tracks to play')
+    if not remaining: # http://stackoverflow.com/questions/53513/python-what-is-the-best-way-to-check-if-a-list-is-empty
+        # Instead of removing the read tracks, reload all the tracks
+        remaining = g.store.find(LibEntry,
+            (LibEntry.user == master) & (LibEntry.is_valid == True)
+            & (LibEntry.is_local == True))
+        if not remaining:
+            raise helpers.NotFound(errors.TRACKS_DEPLETED, 'no tracks to play')
     # Partition tracks based on whether we can embed them in the latent space.
     with_feats = list()
     points = list()

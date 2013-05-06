@@ -25,6 +25,9 @@ errors.NO_CURRENT_TRACK = 0x0d
 #Added by Vincent:
 errors.MISSING_CLUSTER = 0x0e
 
+#Added by Louis:
+errors.INVALID_GROUP_PASSWORD = 0x0f
+
 # Group events.
 events = Namespace()
 events.RATING = u'rating'
@@ -33,3 +36,4 @@ events.LEAVE = u'leave'
 events.PLAY = u'play'
 events.SKIP = u'skip'
 events.MASTER = u'master'
+events.PASSWORD = u'password'
