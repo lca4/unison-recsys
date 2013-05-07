@@ -98,7 +98,7 @@ def pl_generator(user_id, seeds, options = None):
     
     seeds = json.loads(seeds)
     print 'solo_views.pl_generator: seeds = %s' %(seeds)
-    for entry in seeds.items(): # optimization possible, for e.g.: one JSONArray per type
+    for entry in seeds.items():
         type = entry[0]
         seedslist = entry[1]
         print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
@@ -123,9 +123,10 @@ def pl_generator(user_id, seeds, options = None):
         
     for i in xrange(len(tagsmatrix[0])):
         sum = 0
-        for tagvect in tagsmatrix: # ugly, find something better
+        for tagvect in tagsmatrix: # ugly, find something better, like sympy
             sum += tagvect[i]
             refvect.append(sum)
+        # TODO normalize
     if refvect is None or not refvect:
         #TODO Handle error
         print 'solo_views.pl_generator: refvect is None'
@@ -343,6 +344,11 @@ def list_tags():
                  'tid': 5,
                  'name': 'alternative',
                  'ref_id': 3478125690
+                 })
+    tags.append({
+                 'tid': 6,
+                 'name': 'disco',
+                 'ref_id': 6789012345
                  })
     
     
