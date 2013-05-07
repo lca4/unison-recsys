@@ -329,6 +329,21 @@ def list_tags():
                  'name': 'pop',
                  'ref_id': 1357924680
                  })
+    tags.append({
+                 'tid': 3,
+                 'name': 'dance',
+                 'ref_id': 2468013579
+                 })
+    tags.append({
+                 'tid': 4,
+                 'name': 'electronic',
+                 'ref_id': 1256903478
+                 })
+    tags.append({
+                 'tid': 5,
+                 'name': 'alternative',
+                 'ref_id': 3478125690
+                 })
     
     
 #     store = utils.get_store()
