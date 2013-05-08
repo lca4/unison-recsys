@@ -229,9 +229,9 @@ def pl_generator(user_id, seeds, options = None):
         
         # Store the playlist in the database
         print 'solo_views.pl_generator: tracks = %s' % tracks
-        tracks = jsonify(tracks=tracks)
+        jsonify(tracks=tracks)
         print 'solo_views.pl_generator: jsonified tracks = %s' % tracks
-        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect), tracks)
+        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), len(playlist), seeds, unicode(refvect), tracks)
         g.store.add(pldb) # does it work?
         g.store.flush()
         pldb_id = pldb.id
