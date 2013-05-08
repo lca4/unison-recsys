@@ -9,6 +9,7 @@ import helpers
 import libunison.geometry as geometry
 import libunison.predict as predict
 import time
+import copy
 
 import json
 import libunison.utils as utils
@@ -209,10 +210,10 @@ def pl_generator(user_id, seeds, options = None):
                 playlist = sorted(playlist, key=lambda x: x[1])
                 
         # Remove the probabilities
-        dirty = playlist
-        del playlist[:]
-        for pair in dirty:
-            playlist.append(pair[0])
+        clear = list()
+        for pair in playlist:
+            clear.append(pair[0])
+        playlist = clear # Better: rename playlist when containing probabilities
             
         # Keep only the relevant fields from the tracks
         tracks = list()
