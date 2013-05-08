@@ -19,7 +19,7 @@ from operator import itemgetter
 from storm.expr import Desc, In
 
 from math import fabs
-from random import randint
+from random import randint, random, choice
 
 from libunison.models import User, LibEntry, Playlist, PllibEntry, TopTag
 
@@ -101,7 +101,7 @@ def pl_generator(user_id, seeds, options = None):
     for entry in seeds.items():
         type = entry[0]
         seedslist = list()
-        seedslist.append(entry[1])
+        seedslist.append(entry[1]) # avoids missinterpreting one-element lists
         print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
@@ -128,10 +128,10 @@ def pl_generator(user_id, seeds, options = None):
             tagsmatrix.append(vect)
         
     for i in xrange(len(tagsmatrix[0])):
-        sum = 0
+        vsum = 0
         for tagvect in tagsmatrix: # ugly, find something better, like sympy
-            sum += tagvect[i]
-            refvect.append(sum)
+            vsum += tagvect[i]
+            refvect.append(vsum)
         # TODO normalize
     if refvect is None or not refvect:
         #TODO Handle error
@@ -166,7 +166,7 @@ def pl_generator(user_id, seeds, options = None):
         dist=0
         if entry.track.features is not None:
             tagvect = utils.decode_features(entry.track.features)
-            dist = fabs(math.sum([refvect[i] * tagvect[i] for i in range(len(v1))]))
+            dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))]))
             # Filters
             if filter is not None:
                 if filter == 'rating>=4':
@@ -196,7 +196,7 @@ def pl_generator(user_id, seeds, options = None):
             while not resized: # improvement can be done here (use playlist.length() for eg.)
                 for track in playlist:
                     if len(playlist) > size:
-                        if track[1] < random.random():
+                        if track[1] < random():
                             playlist.remove(track)
                     else:
                         resized = True 
@@ -224,9 +224,10 @@ def pl_generator(user_id, seeds, options = None):
             })
         
         # Store the playlist in the database
+        print 'solo_views.pl_generator: tracks = %s' % tracks
         pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect), jsonify(tracks=tracks))
         g.store.add(pldb) # does it work?
-        store.flush()
+        g.store.flush()
         pldb_id = pldb.id
         # See Storm Tutorial
         print 'solo_views.pl_generator: pldb_id = %s' % pldb_id
@@ -234,11 +235,11 @@ def pl_generator(user_id, seeds, options = None):
         # Add it to the user library
         pledb = PllibEntry(user_id, pldb_id)
         g.store.add(pledb)
-        store.flush()
+        g.store.flush()
         pledb_id = pledb.id
         
         # Make the changes persistent in the DB
-        store.commit()
+        g.store.commit()
         
         # Craft JSON
         playlistdescriptor = dict()
@@ -269,7 +270,7 @@ def pl_generator(user_id, seeds, options = None):
 def pl_randomizer(oldPL):
     newPL = list()
     for i in range(len(oldPL)):
-        element = random.choice(oldPL)
+        element = choice(oldPL)
         oldPL.remove(element)
         newPL.append(element)
     return newPL
