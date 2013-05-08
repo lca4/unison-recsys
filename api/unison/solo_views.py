@@ -104,18 +104,23 @@ def pl_generator(user_id, seeds, options = None):
         print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
+                print 'solo_views.pl_generator: seed is "%s" and of type "%s"' %(seed, type)
                 if type == 'tags':
                     vect, weight = utils.tag_features(seed)
-                    print 'solo_views.pl_generator: added features for tag %s to refvect' %(seed)
-                if type == 'tracks':
-                    # TODO: update find condition: UNVALID!
-                    track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed)) # Can't work: seed is not the local_id !
-                    if (track is not None):
-                        vect, weight = utils.track_features(track.track.features)
-                        print 'solo_views.pl_generator: added features for track %s to refvect' %(track.track.title)
-                    else:
-                        #TODO Handle error
-                        vect = list()
+                    if vect:
+                        print 'solo_views.pl_generator: found tag "%s" in the db' %(seed)
+                    elif vect is None:
+                        print 'solo_views.pl_generator: not found tag "%s" in the db, vect is None' %(seed)
+                # Selection by tracks is not available for now
+#                 if type == 'tracks':
+#                     # TODO: update find condition: UNVALID!
+#                     track = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.local_id == seed)) # Can't work: seed is not the local_id !
+#                     if (track is not None):
+#                         vect, weight = utils.track_features(track.track.features)
+#                         print 'solo_views.pl_generator: added features for track %s to refvect' %(track.track.title)
+#                     else:
+#                         #TODO Handle error
+#                         vect = list()
                 else:
                     #TODO handle error: undefined seed type
                     vect = list()
@@ -219,22 +224,35 @@ def pl_generator(user_id, seeds, options = None):
         
         # Store the playlist in the database
         pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect), jsonify(tracks=tracks))
-        insert_id = g.store.add(pldb) # does it work?
-        print 'solo_views.pl_generator: insert_id = %s' % insert_id
+        g.store.add(pldb) # does it work?
+        store.flush()
+        pldb_id = pldb.id
+        # See Storm Tutorial
+        print 'solo_views.pl_generator: pldb_id = %s' % pldb_id
         # Retrieve id from last insert to playlist table --> HOW?
         # Add it to the user library
-        pledb = PllibEntry(user_id, 0)
+        pledb = PllibEntry(user_id, pldb_id)
         g.store.add(pledb)
+        store.flush()
+        pledb_id = pledb.id
         
         # Craft JSON
         playlistdescriptor = dict()
-        playlistdescriptor['tracks'] = tracks
+        playlistdescriptor['author_id'] = pldb.author_id
+        playlistdescriptor['gs_playlist_id'] = pldb_id # Playlist.id
+        playlistdescriptor['title'] = pldb.title
+        #playlistdescriptor['image'] = pldb.image
+        playlistdescriptor['tracks'] = pldb.tracks
+        playlistdescriptor['gs_size'] = pldb.size
         # Add additional data
-        playlistdescriptor['gs_playlist_id'] = None # TODO
-        playlistdescriptor['author_id'] = user_id
-        playlistdescriptor['size'] = size
-        playlistdescriptor['gs_creation_time'] = None #TODO
-        playlistdescriptor['gs_update_time'] = None #TODO
+        playlistdescriptor['gs_creation_time'] = pledb.created
+        print 'solo_views.pl_generator: pledb.created = %s' % pledb.created
+        playlistdescriptor['gs_update_time'] = pledb.updated
+        print 'solo_views.pl_generator: pledb.updated = %s' % pledb.updated
+        playlistdescriptor['gs_listeners'] = pldb.listeners
+        playlistdescriptor['gs_avg_rating'] = pldb.avg_rating
+        playlistdescriptor['gs_is_shared'] = pldb.is_shared
+        playlistdescriptor['gs_is_synced'] = pledb.is_synced
         
         print 'solo_views.pl_generator: playlist = %s' % playlist
         print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
