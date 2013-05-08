@@ -217,16 +217,21 @@ def pl_generator(user_id, seeds, options = None):
             
         # Keep only the relevant fields from the tracks
         tracks = list()
+        index = 0
         for entry in playlist:
             tracks.append({
               'artist': entry.track.artist,
               'title': entry.track.title,
               'local_id': entry.local_id,
+              'play_order': index # postion of the track in the playlist
             })
+            index = index + 1
         
         # Store the playlist in the database
         print 'solo_views.pl_generator: tracks = %s' % tracks
-        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect), jsonify(tracks=tracks))
+        tracks = jsonify(tracks=tracks)
+        print 'solo_views.pl_generator: jsonified tracks = %s' % tracks
+        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), size, seeds, unicode(refvect), tracks)
         g.store.add(pldb) # does it work?
         g.store.flush()
         pldb_id = pldb.id
