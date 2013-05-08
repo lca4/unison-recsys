@@ -100,7 +100,8 @@ def pl_generator(user_id, seeds, options = None):
     print 'solo_views.pl_generator: seeds = %s' %(seeds)
     for entry in seeds.items():
         type = entry[0]
-        seedslist = entry[1]
+        seedslist = list()
+        seedslist.append(entry[1])
         print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
@@ -235,6 +236,9 @@ def pl_generator(user_id, seeds, options = None):
         g.store.add(pledb)
         store.flush()
         pledb_id = pledb.id
+        
+        # Make the changes persistent in the DB
+        store.commit()
         
         # Craft JSON
         playlistdescriptor = dict()
