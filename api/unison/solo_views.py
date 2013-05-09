@@ -45,7 +45,7 @@ def generate_playlist(uid):
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
 
-    return jsonify(playlists=pl_generator(uid, seeds, options))
+    return jsonify(playlist=pl_generator(uid, seeds, options))
 
 
 """
@@ -304,9 +304,9 @@ def list_playlists(uid):
     playlists = list()
     rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
     for playlist in rows[:MAX_PLAYLISTS]:
-        print 'solo_views.list_playlists: created=%s' % (playlist.playlist.created)
+        #print 'solo_views.list_playlists: created=%s' % (playlist.playlist.created)
         playlists.append({
-          'pid': playlist.playlist.id,
+          'plid': playlist.playlist.id,
           'created': playlist.playlist.created.isoformat(),
           'updated': playlist.playlist.updated.isoformat(),
           'title': playlist.playlist.title,
@@ -317,8 +317,8 @@ def list_playlists(uid):
           'tracks': playlist.playlist.tracks,
           'listeners': playlist.playlist.listeners,
           'avg_rating': playlist.playlist.avg_rating,
-          'shared': playlist.playlist.is_shared,
-          'synced': playlist.is_synced,
+          'is_shared': playlist.playlist.is_shared,
+          'is_synced': playlist.is_synced,
           'rating': playlist.rating,
           'comment': playlist.comment
         })
