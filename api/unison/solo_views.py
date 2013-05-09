@@ -45,7 +45,7 @@ def generate_playlist(uid):
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
 
-    return pl_generator(uid, seeds, options)
+    return jsonify(playlists=pl_generator(uid, seeds, options))
 
 
 """
@@ -252,20 +252,20 @@ def pl_generator(user_id, seeds, options = None):
         playlistdescriptor['author_id'] = pldb.author_id
         playlistdescriptor['gs_playlist_id'] = pldb_id # Playlist.id
         playlistdescriptor['title'] = pldb.title
-        #playlistdescriptor['image'] = pldb.image
+        #playlistdescriptor['image'] = pldb.image # not available for now
         playlistdescriptor['tracks'] = pldb.tracks
         playlistdescriptor['gs_size'] = pldb.size
         # Add additional data
-        playlistdescriptor['gs_creation_time'] = pledb.created
+        playlistdescriptor['gs_creation_time'] = pledb.created.isoformat()
         print 'solo_views.pl_generator: pledb.created = %s' % pledb.created
-        playlistdescriptor['gs_update_time'] = pledb.updated
-        print 'solo_views.pl_generator: pledb.updated = %s' % pledb.updated
+        playlistdescriptor['gs_update_time'] = pledb.updated.isoformat()
+        print 'solo_views.pl_generator: pledb.updated = %s' % str(pledb.updated)
         playlistdescriptor['gs_listeners'] = pldb.listeners
         playlistdescriptor['gs_avg_rating'] = pldb.avg_rating
         playlistdescriptor['gs_is_shared'] = pldb.is_shared
         playlistdescriptor['gs_is_synced'] = pledb.is_synced
         
-        print 'solo_views.pl_generator: playlist = %s' % playlist
+        #print 'solo_views.pl_generator: playlist = %s' % playlist
         print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
         return playlistdescriptor
     return None
@@ -300,13 +300,15 @@ def pl_randomizer(oldPL):
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
 @helpers.authenticate()
 def list_playlists(uid):
+    print 'solo_views.list_playlists'
     playlists = list()
     rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
     for playlist in rows[:MAX_PLAYLISTS]:
+        print 'solo_views.list_playlists: created=%s' % (playlist.playlist.created)
         playlists.append({
           'pid': playlist.playlist.id,
-          'created': playlist.playlist.created,
-          'updated': playlist.playlist.updated,
+          'created': playlist.playlist.created.isoformat(),
+          'updated': playlist.playlist.updated.isoformat(),
           'title': playlist.playlist.title,
           'image': playlist.playlist.image,
           'author_id': playlist.playlist.author.id,
