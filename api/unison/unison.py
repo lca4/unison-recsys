@@ -65,6 +65,13 @@ def handle_not_found(error):
         return response
     return "not found", 404
 
+@app.errorhandler(403)
+def handle_forbidden(error):
+    if (isinstance(error, helpers.Forbidden):
+        response = jsonify(error=error.error, message=error.msg)
+        response.status_code = 404
+        return response
+    return "forbidden", 403
 
 @app.route('/')
 @helpers.authenticate(with_user=True)
