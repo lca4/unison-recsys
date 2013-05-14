@@ -182,8 +182,6 @@ def pl_generator(user_id, seeds, options = None):
         if added:
             prob = 1 - dist  # Associate a probability
             playlist.append((entry, prob))
-            print 'solo_views.pl_generator: added entry = %s to playlist' % entry
-#            print "track added to playlist"
     
     if playlist is not None and playlist:
     
@@ -228,16 +226,12 @@ def pl_generator(user_id, seeds, options = None):
             index = index + 1
         
         # Store the playlist in the database
-        print 'solo_views.pl_generator: tracks = %s' % tracks
         jsonify(tracks=tracks)
-        print 'solo_views.pl_generator: jsonified tracks = %s' % tracks
         pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), len(playlist), seeds, unicode(refvect), tracks)
-        g.store.add(pldb) # does it work?
-        g.store.flush()
+        g.store.add(pldb)
+        g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
         pldb_id = pldb.id
-        # See Storm Tutorial
         print 'solo_views.pl_generator: pldb_id = %s' % pldb_id
-        # Retrieve id from last insert to playlist table --> HOW?
         # Add it to the user library
         pledb = PllibEntry(user_id, pldb_id)
         g.store.add(pledb)
@@ -250,6 +244,7 @@ def pl_generator(user_id, seeds, options = None):
         # Craft JSON
         playlistdescriptor = dict()
         playlistdescriptor['author_id'] = pldb.author_id
+        playlistdescriptor['author_name'] = pldb.author.nickname
         playlistdescriptor['gs_playlist_id'] = pldb_id # Playlist.id
         playlistdescriptor['title'] = pldb.title
         #playlistdescriptor['image'] = pldb.image # not available for now
@@ -257,9 +252,7 @@ def pl_generator(user_id, seeds, options = None):
         playlistdescriptor['gs_size'] = pldb.size
         # Add additional data
         playlistdescriptor['gs_creation_time'] = pledb.created.isoformat()
-        print 'solo_views.pl_generator: pledb.created = %s' % pledb.created
         playlistdescriptor['gs_update_time'] = pledb.updated.isoformat()
-        print 'solo_views.pl_generator: pledb.updated = %s' % str(pledb.updated)
         playlistdescriptor['gs_listeners'] = pldb.listeners
         playlistdescriptor['gs_avg_rating'] = pldb.avg_rating
         playlistdescriptor['gs_is_shared'] = pldb.is_shared
@@ -300,7 +293,6 @@ def pl_randomizer(oldPL):
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
 @helpers.authenticate()
 def list_playlists(uid):
-    print 'solo_views.list_playlists'
     playlists = list()
     rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
     for playlist in rows[:MAX_PLAYLISTS]:
