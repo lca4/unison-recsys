@@ -232,7 +232,7 @@ def pl_generator(user_id, seeds, options = None):
         g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
         pldb_id = pldb.id
         print 'solo_views.pl_generator: pldb_id = %s' % pldb_id
-        g.store.find(Person, Playlist.id == pldb_id).set(title=u"playlist_%s" % pldb_id)
+        g.store.find(Playlist, Playlist.id == pldb_id).set(title=u"playlist_%s" % pldb_id)
         # Add it to the user library
         pledb = PllibEntry(user_id, pldb_id)
         g.store.add(pledb)
