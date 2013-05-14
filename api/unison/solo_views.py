@@ -45,7 +45,7 @@ def generate_playlist(uid):
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
 
-    return jsonify(playlist=pl_generator(uid, seeds, options))
+    return jsonify(pl_generator(uid, seeds, options))
 
 
 """
@@ -215,7 +215,7 @@ def pl_generator(user_id, seeds, options = None):
             
         # Keep only the relevant fields from the tracks
         tracks = list()
-        index = 0
+        index = 1 # First index
         for entry in playlist:
             tracks.append({
               'artist': entry.track.artist,
@@ -227,18 +227,19 @@ def pl_generator(user_id, seeds, options = None):
         
         # Store the playlist in the database
         jsonify(tracks=tracks)
-        pldb = Playlist(user_id, unicode('playlist_' + str(randint(0, 99))), len(playlist), seeds, unicode(refvect), tracks)
+        pldb = Playlist(user_id, unicode('unnamed'), len(playlist), seeds, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
         g.store.add(pldb)
         g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
         pldb_id = pldb.id
         print 'solo_views.pl_generator: pldb_id = %s' % pldb_id
+        g.store.find(Person, Playlist.id == pldb_id).set(title=u"playlist_%s" % pldb_id)
         # Add it to the user library
         pledb = PllibEntry(user_id, pldb_id)
         g.store.add(pledb)
         g.store.flush()
         pledb_id = pledb.id
         
-        # Make the changes persistent in the DB
+        # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
         g.store.commit()
         
         # Craft JSON
