@@ -92,7 +92,8 @@ def pl_generator(user_id, seeds, options = None):
         raise Exception
     
     # Initiate some values
-    playlist = list()
+    probpl = list() # probabilistic playlist
+    playlist = list() # pure playlist (only data relative to playlist)
     store = utils.get_store()
     tagsmatrix = list()
     refvect = list()
@@ -159,6 +160,10 @@ def pl_generator(user_id, seeds, options = None):
         filter = None
         size = None
         sort = None
+    # Set default values
+    if filter is None:
+        filter = 'rating>=4'
+
     
     # Fetch LibEntries
     entries = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
@@ -181,37 +186,34 @@ def pl_generator(user_id, seeds, options = None):
                 added = True
         if added:
             prob = 1 - dist  # Associate a probability
-            playlist.append((entry, prob))
+            probpl.append((entry, prob))
     
-    if playlist is not None and playlist:
-    
+    if probpl is not None and probpl:
         # Randomizes the order
-        playlist = pl_randomizer(playlist)
+        probpl = pl_randomizer(probpl)
         
         # Removes tracks until the desired length is reached
         # Do it even is no size specifications? (not only random track order)
         if size is not None and size:
             resized = False
             while not resized: # improvement can be done here (use playlist.length() for eg.)
-                for track in playlist:
-                    if len(playlist) > size:
+                for track in probpl:
+                    if len(probpl) > size:
                         if track[1] < random():
-                            playlist.remove(track)
+                            probpl.remove(track)
                     else:
                         resized = True 
         
         # Sorting
         if sort is not None and sort:
             if sort == 'ratings':
-                playlist = sorted(playlist, key=lambda x: x[0].rating)
+                probpl = sorted(probpl, key=lambda x: x[0].rating)
             elif sort == 'proximity':
-                playlist = sorted(playlist, key=lambda x: x[1])
+                probpl = sorted(probpl, key=lambda x: x[1])
                 
         # Remove the probabilities
-        clear = list()
-        for pair in playlist:
-            clear.append(pair[0])
-        playlist = clear # Better: rename playlist when containing probabilities
+        for pair in probpl:
+            playlist.append(pair[0])
             
         # Keep only the relevant fields from the tracks
         tracks = list()
@@ -238,26 +240,28 @@ def pl_generator(user_id, seeds, options = None):
         g.store.add(pledb)
         g.store.flush()
         pledb_id = pledb.id
+        new_playlist = g.store.find(PllibEntry, (PllibEntry.id == pledb_id))
         
         # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
         g.store.commit()
         
         # Craft JSON
-        playlistdescriptor = dict()
-        playlistdescriptor['author_id'] = pldb.author_id
-        playlistdescriptor['author_name'] = pldb.author.nickname
-        playlistdescriptor['gs_playlist_id'] = pldb_id # Playlist.id
-        playlistdescriptor['title'] = pldb.title
-        #playlistdescriptor['image'] = pldb.image # not available for now
-        playlistdescriptor['tracks'] = pldb.tracks
-        playlistdescriptor['gs_size'] = pldb.size
-        # Add additional data
-        playlistdescriptor['gs_creation_time'] = pledb.created.isoformat()
-        playlistdescriptor['gs_update_time'] = pledb.updated.isoformat()
-        playlistdescriptor['gs_listeners'] = pldb.listeners
-        playlistdescriptor['gs_avg_rating'] = pldb.avg_rating
-        playlistdescriptor['gs_is_shared'] = pldb.is_shared
-        playlistdescriptor['gs_is_synced'] = pledb.is_synced
+        playlistdescriptor = to_dict(new_playlist)
+#         playlistdescriptor = dict()
+#         playlistdescriptor['author_id'] = pldb.author_id
+#         playlistdescriptor['author_name'] = pldb.author.nickname
+#         playlistdescriptor['gs_playlist_id'] = pldb_id # Playlist.id
+#         playlistdescriptor['title'] = pldb.title
+#         #playlistdescriptor['image'] = pldb.image # not available for now
+#         playlistdescriptor['tracks'] = pldb.tracks
+#         playlistdescriptor['gs_size'] = pldb.size
+#         # Add additional data
+#         playlistdescriptor['gs_creation_time'] = pledb.created.isoformat()
+#         playlistdescriptor['gs_update_time'] = pledb.updated.isoformat()
+#         playlistdescriptor['gs_listeners'] = pldb.listeners
+#         playlistdescriptor['gs_avg_rating'] = pldb.avg_rating
+#         playlistdescriptor['gs_is_shared'] = pldb.is_shared
+#         playlistdescriptor['gs_is_synced'] = pledb.is_synced
         
         #print 'solo_views.pl_generator: playlist = %s' % playlist
         print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
@@ -298,25 +302,28 @@ def list_playlists(uid):
     rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
     for playlist in rows[:MAX_PLAYLISTS]:
         #print 'solo_views.list_playlists: created=%s' % (playlist.playlist.created)
-        playlists.append({
-          'plid': playlist.playlist.id,
-          'created': playlist.playlist.created.isoformat(),
-          'updated': playlist.playlist.updated.isoformat(),
+        playlists.append(to_dict(playlist))
+    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return jsonify(playlists=playlists)
+
+def to_dict(playlist):
+    return {
+          'gs_playlist_id': playlist.playlist.id,
+          'gs_creation_time': playlist.playlist.created.isoformat(),
+          'gs_update_time': playlist.playlist.updated.isoformat(),
           'title': playlist.playlist.title,
           'image': playlist.playlist.image,
           'author_id': playlist.playlist.author.id,
           'author_name': playlist.playlist.author.nickname,
-          'size': playlist.playlist.size,
+          'gs_size': playlist.playlist.size,
           'tracks': playlist.playlist.tracks,
-          'listeners': playlist.playlist.listeners,
-          'avg_rating': playlist.playlist.avg_rating,
-          'is_shared': playlist.playlist.is_shared,
-          'is_synced': playlist.is_synced,
-          'rating': playlist.rating,
-          'comment': playlist.comment
-        })
-    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-    return jsonify(playlists=playlists)
+          'gs_listeners': playlist.playlist.listeners,
+          'gs_avg_rating': playlist.playlist.avg_rating,
+          'gs_is_shared': playlist.playlist.is_shared,
+          'gs_is_synced': playlist.is_synced,
+          'user_rating': playlist.rating,
+          'user_comment': playlist.comment
+        }
 # 
 # 
 # # Updates the playlist plid from user uid
