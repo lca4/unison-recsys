@@ -5,13 +5,93 @@ import helpers
 import libunison.password as password
 import libunison.mail as mail
 import storm.exceptions
+import math
+import operator
+import random
+import json
 
 from constants import errors, events
 from flask import Blueprint, request, g, jsonify
-from libunison.models import User, Group, Track, LibEntry, GroupEvent
+from libunison.models import User, UserTags, Group, Track, LibEntry, GroupEvent
 
 
 user_views = Blueprint('user_views', __name__)
+
+# @author: Hieu
+def valid_tracks(user):
+    track_ids = list()
+    rows = g.store.find(LibEntry, (LibEntry.user == user) 
+                        & LibEntry.is_valid)
+    for entry in rows:
+        track_ids.append(entry.track_id)
+    return list(set(track_ids))
+
+
+# @author: Hieu
+def favorite_tags(uid):
+    choices = list()
+    res = list()
+    
+    usertags = g.store.get(UserTags, uid)
+
+    if usertags is None:
+        track_ids = valid_tracks(uid)
+        tag_dict = dict()
+        numDoc = 0
+        # res.append(not track_ids)
+        if track_ids:
+            for id in track_ids:
+                track = g.store.get(Track, id)
+                if track is not None:
+                    for tag in eval(track.tags):
+                        tag_dict[tag[0]]=tag_dict.get(tag[0],[0.0, 0.0, 0.0])
+                        l=tag_dict[tag[0]]
+                        l[1] += tag[1] # term frequency
+                        l[2] += 1      # number of document that the tag occurs
+                    numDoc += 1
+            
+            for k, v in tag_dict.items():
+                if v[1]<10 and v[2]<2:
+                    del tag_dict[k]
+                else:            
+                    v[0] = v[1]*math.log(numDoc/float(v[2])) #another tf-idf
+        
+            count = 0
+            for k in sorted(tag_dict.iteritems(), key=operator.itemgetter(1), reverse=True):
+                res.append([k[0],k[1][0],k[1][2]])
+                count += 1
+                if count > 10:
+                    break
+            tagjson = json.dumps(res)
+            usertags = UserTags(uid,tagjson)
+            g.store.add(usertags)
+            g.store.flush()
+    else:
+        res=eval(usertags.tags)
+    
+    if res:
+        sumScore = sum([x[1]/x[2] for x in res])
+        while len(choices)<2:
+              for t in res:
+                  if t[0] not in choices:
+                      if random.random()<(t[1]/t[2])/sumScore:
+                          choices.append(t[0])
+                          if len(choices)>=2:
+                              break
+    return choices
+
+
+# @author: Hieu
+@user_views.route('/<int:uid>/tags', methods=['GET'])
+@helpers.authenticate()
+def get_user_tags(uid):
+    """Get user's favorite tags"""
+    user = g.store.get(User, uid)
+    if user is None:
+        raise helpers.BadRequest(errors.INVALID_USER,
+                "user does not exist")
+    tags = favorite_tags(uid)
+    return jsonify(tags=tags)
 
 
 @user_views.route('', methods=['POST'])

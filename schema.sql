@@ -25,6 +25,10 @@ CREATE TABLE "user" (
 );
 CREATE INDEX user_group_idx ON "user"(group_id);
 
+CREATE TABLE "usertags" (
+  id             bigint PRIMARY KEY,
+  tags           text
+);
 
 CREATE TABLE "group" (
   id             bigserial PRIMARY KEY,
