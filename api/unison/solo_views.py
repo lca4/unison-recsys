@@ -24,9 +24,8 @@ from random import randint, random, choice
 
 from libunison.models import User, LibEntry, Playlist, PllibEntry, TopTag
 
-
 solo_views = Blueprint('solo_views', __name__)
-
+datetime.microsecond = 0
 
 # Maximal number of groups returned when listing groups.
 MAX_PLAYLISTS = 10
@@ -84,7 +83,7 @@ def pl_generator(user_id, seeds, options = None):
     default_filter = 'rating>=4'
     default_size = 'probabilistic'
     default_sort = 'natural'
-    default_title = '__unnamed__¸.·´¯`·.´¯`·.¸¸.·´¯`·.¸><(((º>' # Reduce probability user chooses the same name 
+    default_title = '__unnamed__><((()>' # Reduce probability user chooses the same name 
     
     # Check the input
     if seeds is None or not seeds:
@@ -95,7 +94,7 @@ def pl_generator(user_id, seeds, options = None):
     # Initiate some values
     probpl = list() # probabilistic playlist aka playlist with probabilities associated to each tracks
     playlist = list() # pure playlist (only data relative to playlist)
-    store = utils.get_store()
+#     store = utils.get_store()
     tagsmatrix = list()
     refvect = list()
     
@@ -178,7 +177,7 @@ def pl_generator(user_id, seeds, options = None):
 
     
     # Fetch LibEntries
-    entries = store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
+    entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
     for entry in entries:
         added = False
         dist=0
@@ -248,13 +247,13 @@ def pl_generator(user_id, seeds, options = None):
         pledb = PllibEntry(user_id, pldb.id)
         g.store.add(pledb)
         g.store.flush()
-        new_playlist = g.store.find(PllibEntry, (PllibEntry.id == pledb.id))
+#         new_playlist = g.store.find(PllibEntry, (PllibEntry.id == pledb.id)).one()
         
         # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
         g.store.commit()
         
         # Craft JSON
-        playlistdescriptor = to_dict(new_playlist)
+        playlistdescriptor = to_dict(pledb)
 #         playlistdescriptor = dict()
 #         playlistdescriptor['author_id'] = pldb.author_id
 #         playlistdescriptor['author_name'] = pldb.author.nickname
@@ -384,21 +383,21 @@ def pl_randomizer(oldPL):
         newPL.append(element)
     return newPL
 
-def to_dict(playlist):
+def to_dict(pllibentry):
     return {
-          'gs_playlist_id': playlist.playlist.id,
-          'gs_creation_time': playlist.playlist.created.isoformat(),
-          'gs_update_time': playlist.playlist.updated.isoformat(),
-          'title': playlist.playlist.title,
-          'image': playlist.playlist.image,
-          'author_id': playlist.playlist.author.id,
-          'author_name': playlist.playlist.author.nickname,
-          'gs_size': playlist.playlist.size,
-          'tracks': playlist.playlist.tracks,
-          'gs_listeners': playlist.playlist.listeners,
-          'gs_avg_rating': playlist.playlist.avg_rating,
-          'gs_is_shared': playlist.playlist.is_shared,
-          'gs_is_synced': playlist.is_synced,
-          'user_rating': playlist.rating,
-          'user_comment': playlist.comment
+          'gs_playlist_id': pllibentry.playlist.id,
+          'gs_creation_time': pllibentry.playlist.created.isoformat(),
+          'gs_update_time': pllibentry.playlist.updated.isoformat(),
+          'title': pllibentry.playlist.title,
+          'image': pllibentry.playlist.image,
+          'author_id': pllibentry.playlist.author.id,
+          'author_name': pllibentry.playlist.author.nickname,
+          'gs_size': pllibentry.playlist.size,
+          'tracks': pllibentry.playlist.tracks,
+          'gs_listeners': pllibentry.playlist.listeners,
+          'gs_avg_rating': pllibentry.playlist.avg_rating,
+          'gs_is_shared': pllibentry.playlist.is_shared,
+          'gs_is_synced': pllibentry.is_synced,
+          'user_rating': pllibentry.rating,
+          'user_comment': pllibentry.comment
         }
