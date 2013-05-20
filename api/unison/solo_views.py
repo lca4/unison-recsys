@@ -25,7 +25,6 @@ from random import randint, random, choice
 from libunison.models import User, LibEntry, Playlist, PllibEntry, TopTag
 
 solo_views = Blueprint('solo_views', __name__)
-datetime.microsecond = 0
 
 # Maximal number of groups returned when listing groups.
 MAX_PLAYLISTS = 10
@@ -297,11 +296,9 @@ def pl_generator(user_id, seeds, options = None):
 @helpers.authenticate()
 def list_playlists(uid):
     playlists = list()
-    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid)) #TODO JOIN ON Playlist.is_shared = True
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid))
     for playlist in rows[:MAX_PLAYLISTS]:
-        #print 'solo_views.list_playlists: created=%s' % (playlist.playlist.created)
         playlists.append(to_dict(playlist))
-    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
     return jsonify(playlists=playlists)
 
 # 
@@ -386,8 +383,8 @@ def pl_randomizer(oldPL):
 def to_dict(pllibentry):
     return {
           'gs_playlist_id': pllibentry.playlist.id,
-          'gs_creation_time': pllibentry.playlist.created.isoformat(),
-          'gs_update_time': pllibentry.playlist.updated.isoformat(),
+          'gs_creation_time': pllibentry.playlist.created.replace(microsecond=0).isoformat(),
+          'gs_update_time': pllibentry.playlist.updated.replace(microsecond=0).isoformat(),
           'title': pllibentry.playlist.title,
           'image': pllibentry.playlist.image,
           'author_id': pllibentry.playlist.author.id,
