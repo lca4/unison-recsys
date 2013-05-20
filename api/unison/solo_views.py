@@ -64,21 +64,27 @@ def pl_generator(user_id, seeds, options = None):
     {<option>:<value>[, ...]}
     Supported options:
         * Filter
+            Available values:
             - rating>=3
             - rating>=4 [default]
             - rating>=5
         * Size (to be extended)
+            Available value:
             - probabilistic [default]
         * Sort
+            Available values:
             - natural [default]
             - ratings
             - proximity
+        * Title
+          The given value is the title to be set to the playlist
     """
     
     # Set some default values
     default_filter = 'rating>=4'
     default_size = 'probabilistic'
     default_sort = 'natural'
+    default_title = '__unnamed__¸.·´¯`·.´¯`·.¸¸.·´¯`·.¸><(((º>' # Reduce probability user chooses the same name 
     
     # Check the input
     if seeds is None or not seeds:
@@ -151,10 +157,15 @@ def pl_generator(user_id, seeds, options = None):
             sort = option.value('sort')
         except:
             sort = None
+        try:
+            title = option.value('title')
+        except:
+            title = None
     else:
         filter = None
         size = None
         sort = None
+        title = None
     # Set default values
     if filter is None:
         filter = default_filter
@@ -162,6 +173,8 @@ def pl_generator(user_id, seeds, options = None):
         size = default_size
     if sort is None:
         sort = default_sort
+    if title is None:
+        title = default_title
 
     
     # Fetch LibEntries
@@ -225,18 +238,17 @@ def pl_generator(user_id, seeds, options = None):
         
         # Store the playlist in the playlist table
         jsonify(tracks=tracks)
-        pldb = Playlist(user_id, unicode('unnamed'), len(playlist), seeds, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
+        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
         g.store.add(pldb)
         g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
-        pldb_id = pldb.id
-        print 'solo_views.pl_generator: pldb_id = %s' % pldb_id
-        g.store.find(Playlist, Playlist.id == pldb_id).set(title=u"playlist_%s" % pldb_id)
+        print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
+        if title == default_title:
+            g.store.find(Playlist, Playlist.id == pldb.id).set(title=u"playlist_%s" % pldb.id)
         # Add it to the user playlist library
-        pledb = PllibEntry(user_id, pldb_id)
+        pledb = PllibEntry(user_id, pldb.id)
         g.store.add(pledb)
         g.store.flush()
-        pledb_id = pledb.id
-        new_playlist = g.store.find(PllibEntry, (PllibEntry.id == pledb_id))
+        new_playlist = g.store.find(PllibEntry, (PllibEntry.id == pledb.id))
         
         # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
         g.store.commit()
