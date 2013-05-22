@@ -67,9 +67,9 @@ def handle_not_found(error):
 
 @app.errorhandler(403)
 def handle_forbidden(error):
-    if (isinstance(error, helpers.Forbidden):
+    if (isinstance(error, helpers.Forbidden)):
         response = jsonify(error=error.error, message=error.msg)
-        response.status_code = 404
+        response.status_code = 403
         return response
     return "forbidden", 403
 
