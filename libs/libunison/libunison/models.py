@@ -26,6 +26,16 @@ class User(Storm):
         self.email = email
         self.password = password
 
+#@author: Hieu    
+class UserTags(Storm):
+    __storm_table__ = 'usertags'
+    id = Int(primary=True)
+    tags = Unicode()
+    def __init__(self, id, tags=None):
+        self.id = id
+        self.tags = tags
+
+
 
 class Group(Storm):
     __storm_table__ = 'group'
