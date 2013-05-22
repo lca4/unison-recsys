@@ -46,6 +46,111 @@ def generate_playlist(uid):
     return jsonify(pl_generator(uid, seeds, options))
 
 
+@solo_views.route('/<int:uid>/playlists', methods=['GET'])
+@helpers.authenticate()
+def list_playlists(uid):
+    """
+    Lists the playlists created by the user uid
+    """
+    playlists = list()
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid))
+    for playlist in rows[:MAX_PLAYLISTS]:
+        playlists.append(to_dict(playlist))
+    return jsonify(playlists=playlists)
+
+
+@solo_views.route('/playlists', methods=['GET'])
+@helpers.authenticate()
+def list_shared_playlists():
+    """
+    Lists the playlists available to everyone.
+    """
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return None
+
+
+@solo_views.route('/<int:uid>/playlist/<int:plid>', methods=['POST'])
+@helpers.authenticate()
+def update_playlist(uid, plid):
+    """
+    Updates the playlist plid from user uid.
+    Fields to be updted are optional.
+    
+    Supported fields:
+        * local_id
+        * title
+        * image
+        * tracks
+    """
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return None
+ 
+
+@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
+@helpers.authenticate()
+def remove_playlist(uid, plid):
+    """
+    Disables the playlist plid from user uid playlist library.
+    """
+    #TODO
+    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return None
+
+
+@solo_views.route('/tags/top', methods=['GET'])
+@helpers.authenticate()
+def list_top_tags():
+    """
+    Lists the top tags 
+    """
+    
+    tags = list()
+    
+    # TESTS
+    tags.append({
+                 'tid': 1,
+                 'name': 'rock',
+                 'ref_id': 1234567890
+                 })
+    tags.append({
+                 'tid': 2,
+                 'name': 'pop',
+                 'ref_id': 1357924680
+                 })
+    tags.append({
+                 'tid': 3,
+                 'name': 'dance',
+                 'ref_id': 2468013579
+                 })
+    tags.append({
+                 'tid': 4,
+                 'name': 'electronic',
+                 'ref_id': 1256903478
+                 })
+    tags.append({
+                 'tid': 5,
+                 'name': 'alternative',
+                 'ref_id': 3478125690
+                 })
+    tags.append({
+                 'tid': 6,
+                 'name': 'disco',
+                 'ref_id': 6789012345
+                 })
+    
+    
+#     store = utils.get_store()
+#     entries = store.find(TopTag, None)
+#     for entry in entries:
+#         #TODO
+#         print TODO
+    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return jsonify(tags=tags)
+
+
+# Class functions (not part of the api itself)
 
 def pl_generator(user_id, seeds, options = None):
     """ Generates a playlist based on the given seeds.
@@ -272,103 +377,6 @@ def pl_generator(user_id, seeds, options = None):
         print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
         return playlistdescriptor
     return None
-
-
-
-
-# @solo_views.route('/<int:uid>/playlist', methods=['POST'])
-# @helpers.authenticate()
-# def create_playlist(uid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-# 
-# 
-# @solo_views.route('/<int:uid>/playlists/<int:pid>', methods=['GET'])
-# @helpers.authenticate(with_user=True)
-# def get_playlist(uid, pid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-# 
-# Returns the list of playlists of user uid
-@solo_views.route('/<int:uid>/playlists', methods=['GET'])
-@helpers.authenticate()
-def list_playlists(uid):
-    playlists = list()
-    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid))
-    for playlist in rows[:MAX_PLAYLISTS]:
-        playlists.append(to_dict(playlist))
-    return jsonify(playlists=playlists)
-
-# 
-# 
-# # Updates the playlist plid from user uid
-# @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-# @helpers.authenticate()
-# def update_playlist(uid, plid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-# 
-# 
-# # Disables the playlist plid from user uid
-# @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-# @helpers.authenticate()
-# def remove_playlist(uid, plid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-
-# Returns the list of tags
-@solo_views.route('/tags', methods=['GET'])
-@helpers.authenticate()
-def list_tags():
-    
-    tags = list()
-    
-    # TESTS
-    tags.append({
-                 'tid': 1,
-                 'name': 'rock',
-                 'ref_id': 1234567890
-                 })
-    tags.append({
-                 'tid': 2,
-                 'name': 'pop',
-                 'ref_id': 1357924680
-                 })
-    tags.append({
-                 'tid': 3,
-                 'name': 'dance',
-                 'ref_id': 2468013579
-                 })
-    tags.append({
-                 'tid': 4,
-                 'name': 'electronic',
-                 'ref_id': 1256903478
-                 })
-    tags.append({
-                 'tid': 5,
-                 'name': 'alternative',
-                 'ref_id': 3478125690
-                 })
-    tags.append({
-                 'tid': 6,
-                 'name': 'disco',
-                 'ref_id': 6789012345
-                 })
-    
-    
-#     store = utils.get_store()
-#     entries = store.find(TopTag, None)
-#     for entry in entries:
-#         #TODO
-#         print TODO
-    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-    return jsonify(tags=tags)
-
-# Class utility functions (not part of the api itself)
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
 # Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle
