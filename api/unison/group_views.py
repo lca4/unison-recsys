@@ -60,7 +60,7 @@ def list_groups():
           'nb_users': group.users.count(),
           'distance': (geometry.distance(userloc, group.coordinates)
                   if userloc is not None else None),
-		  'password': group.password != None,
+    		  'password': group.password != None
         })
     return jsonify(groups=groups)
 
@@ -77,9 +77,9 @@ def create_group():
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "group name, latitude or longitude is missing or invalid")
     #Added by Vincent:
+    askList = None
     if 'list' in request.form:
         askList = bool(request.form['list'])
-    
     group = Group(name, is_active=True)
     group.coordinates = geometry.Point(lat, lon)
     group = g.store.add(group)
@@ -93,11 +93,13 @@ def create_group():
           'gid': group.id,
           'name': group.name,
           'nb_users': NB_USERS_IN_NEW_GROUP, #the group has just been created
-          'distance': (geometry.distance(userloc, group.coordinates)
-                if userloc is not None else None), #this should be either 0 or None
+          'distance': 0.0, #this won't be displayed anyway
+#          'distance': (geometry.distance(userloc, group.coordinates)
+#                if userloc is not None else None), #this should be either 0 or None
           'password': False #the group has just been created
         }
-        return jsonify(group=groupDict)
+        #TODO: understand why we cannot give the json object a name
+        return jsonify(groupDict)
 
 
 #Added by Louis for group password handling	
