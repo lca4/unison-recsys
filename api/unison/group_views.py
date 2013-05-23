@@ -77,14 +77,17 @@ def create_group():
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "group name, latitude or longitude is missing or invalid")
     #Added by Vincent:
-    askList = None
-    if 'list' in request.form:
-        askList = bool(request.form['list'])
+    
     group = Group(name, is_active=True)
     group.coordinates = geometry.Point(lat, lon)
     group = g.store.add(group)
     
-    if askList is not None and askList:
+    
+    askList = False
+    if 'list' in request.form:
+        askList = bool(request.form['list'])
+      
+    if askList:
         return list_groups()
     else:
         #the user asked only for the newly created group to be returned.

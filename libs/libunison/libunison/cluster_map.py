@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+#This code is not used by the server. It is just for testing.
+
+import collections
+
 from math import cos, pi, floor, fabs
 
 #All distances are in meters
@@ -14,6 +18,9 @@ CIRC_AT_EQUATOR = 2*pi*EARTH_RADIUS #approximatively 40K km
 CLUSTER_HEIGHT = 200000
 CLUSTER_WIDTH = 200000
 
+
+# Simple data structure to represent a point.
+Point = collections.namedtuple('Point', 'lat lon')
 
 class Layer:
     """Simple class representing a layer as we split the Earth into layers
@@ -156,12 +163,49 @@ def getLayersDict():
     layersDict = {}
     createLayers(layersDict)
     return layersDict
+    
+def getCorrespondingPoint(location):
+    lat = location.lat;
+    lon = location.lon;
 
-a=getLayersDict() #debug
-print(len(a))
-print('----')
-for lat in reversed(sorted(iter(a))):
-     print(len(a[lat].clusterDict))
+    phi = deg2rad(lat)
+    theta = deg2rad(lon)
+    
+    clusterHeight = 1000.0
+    clusterVertAngle = clusterHeight / EARTH_RADIUS
+    #print(str(floor(pi / clusterVertAngle)))
+    clusterWidth = 1000.0
+    clusterHoriAngle = clusterWidth / (EARTH_RADIUS * cos(phi))
+    #print(str(floor(2 * pi / clusterHoriAngle)))
+    
+    
+    
+
+    return Point(rad2deg(floor(phi / clusterVertAngle) * clusterVertAngle), rad2deg(floor(theta / clusterHoriAngle) * clusterHoriAngle))
+    
+def deg2rad(angle):
+    return (angle * pi) / 180
+    
+def rad2deg(angle):
+    return (angle * 180) / pi
+
+#1km
+#50.066389,5.714722
+#50.060556,5.704167
+#-0.0041
+#69.999
+    
+res1 = getCorrespondingPoint(Point(84.99477,0.11))
+res2 = getCorrespondingPoint(Point(84.99477,0))
+
+print('lat = ' + str(res1.lat) + ' lon = ' + str(res1.lon))
+print('lat = ' + str(res2.lat) + ' lon = ' + str(res2.lon))
+
+# a=getLayersDict() #debug
+# print(len(a))
+# print('----')
+# for lat in reversed(sorted(iter(a))):
+     # print(len(a[lat].clusterDict))
 #    s = '['
 #    for lon in sorted(iter(a[lat].clusterDict)):
 #        s= s + '(' + "{0:.2f}".format(lat) +', ' + "{0:.2f}".format(lon) + ')'
