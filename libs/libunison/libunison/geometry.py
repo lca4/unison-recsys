@@ -111,8 +111,11 @@ def map_location_on_grid(point):
     
     clusterVertAngle = clusterHeight / EARTH_RADIUS
     clusterHoriAngle = clusterWidth / (EARTH_RADIUS * cos(phi))
+    
+    clusterLat = floor(phi / clusterVertAngle) * clusterVertAngle
+    clusterLon = floor(theta / clusterWidth / (EARTH_RADIUS * cos(phi))) * clusterWidth / (EARTH_RADIUS * cos(clusterLat))
 
-    return Point(rad2deg(floor(phi / clusterVertAngle) * clusterVertAngle), rad2deg(floor(theta / clusterHoriAngle) * clusterHoriAngle))
+    return Point(rad2deg(clusterLat), rad2deg(clusterLon))
     
 def deg2rad(angle):
     return (angle * pi) / 180
