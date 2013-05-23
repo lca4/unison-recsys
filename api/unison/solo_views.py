@@ -87,7 +87,7 @@ def update_playlist(uid, plid):
         * tracks [JSONObject]
     """
     # Updates are only allowed if user is author of playlist
-    entry = g.store.find(Playlist, Playlist.author_id == uid & Playlist.is_valid).one()
+    entry = g.store.find(Playlist, (Playlist.author_id == uid) & Playlist.is_valid).one()
     if entry is not None and entry:
         fields = request.form['fields']
         if fields:
@@ -100,7 +100,7 @@ def update_playlist(uid, plid):
                 elif key == 'image':
                     entry.set(image=unicode(value))
                 elif key == 'local_id':
-                    g.store.find(PllibEntry, PllibEntry.user_id == uid & PllibEnty.playlist_id == plid & Playlist.is_valid).set(local_id=int(local_id))
+                    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEnty.playlist_id == plid) & Playlist.is_valid).set(local_id=int(local_id))
                 elif key == 'tracks':
                     entry.set(tracks=value)
                 print 'solo_views.update_playlist: fields = %s' % fields
@@ -115,7 +115,7 @@ def remove_playlist(uid, plid):
     """
     Disables the playlist plid from user uid playlist library.
     """
-    g.store.find(PllibEntry, PllibEntry.user_id == uid & PllibEntry.playlist_id == plid & PllibEntry.is_valid).set(is_valid=False)
+    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(is_valid=False)
     g.store.commit()
     return helpers.success()
 
@@ -126,7 +126,7 @@ def copy_playlist(uid, plid):
     # IDEA
     # Copy the seeds used to generate the original PL, and generate a PL with
     # these seeds, such that the PL contains only songs from the user library
-    pl = g.store.find(Playlist, Playlist.id == plid & Playlist.is_valid & Playlist.is_shared).one()
+    pl = g.store.find(Playlist, (Playlist.id == plid) & Playlist.is_valid & Playlist.is_shared).one()
     if seeds:
         return jsonify(pl_generator(uid, pl.seeds, pl.options))
     return None
