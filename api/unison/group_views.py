@@ -30,6 +30,9 @@ ACTIVITY_INTERVAL = 60 * 60 * 5  # In seconds.
 # Minimum size of a cluster so that we make a suggestion.
 MIN_SUGGESTION_SIZE = 2
 
+#number of users of a newly created group, for now the group is created empty.
+NB_USERS_IN_NEW_GROUP = 0
+
 group_views = Blueprint('group_views', __name__)
 
 
@@ -57,6 +60,7 @@ def list_groups():
           'nb_users': group.users.count(),
           'distance': (geometry.distance(userloc, group.coordinates)
                   if userloc is not None else None),
+    		  'password': group.password != None
         })
     return jsonify(groups=groups)
 
@@ -72,10 +76,66 @@ def create_group():
     except (KeyError, ValueError):
         raise helpers.BadRequest(errors.MISSING_FIELD,
                 "group name, latitude or longitude is missing or invalid")
+    #Added by Vincent:
+    
     group = Group(name, is_active=True)
     group.coordinates = geometry.Point(lat, lon)
-    g.store.add(group)
-    return list_groups()
+    group = g.store.add(group)
+    
+    
+    askList = False
+    if 'list' in request.form:
+        askList = bool(request.form['list'])
+      
+    if askList:
+        return list_groups()
+    else:
+        #the user asked only for the newly created group to be returned.
+        group.id = AutoReload
+        groupDict = {
+          'gid': group.id,
+          'name': group.name,
+          'nb_users': NB_USERS_IN_NEW_GROUP, #the group has just been created
+          'distance': 0.0, #this won't be displayed anyway
+#          'distance': (geometry.distance(userloc, group.coordinates)
+#                if userloc is not None else None), #this should be either 0 or None
+          'password': False #the group has just been created
+        }
+        #TODO: understand why we cannot give the json object a name
+        return jsonify(groupDict)
+
+
+#Added by Louis for group password handling	
+@group_views.route('/<int:gid>', methods=['PUT'])
+@helpers.authenticate(with_user=True)
+def put_new_password(user, gid):
+    """Change the password for the group or sets one if there is one.
+	
+    We must decide if the users already in the group should be prompted for the new password.
+	
+    """
+	
+    try:
+        password = request.form['password']
+    except (KeyrError, ValueError):
+        raise helpers.BadRequest(errors.MISSING_FIELD,
+            "group password is missing")
+    group = g.store.get(Group, gid)
+
+    if group is None:
+        raise helpers.BadRequest(errors.INVALID_GROUP,
+            "group does not exist")
+
+    if user.id != group.master_id or group.automatic:
+        raise helpers.BadRequest(errors.UNAUTHORIZED,
+            "not allowed to change group password unless DJ")
+	
+    group.password = password if (password != '') else None
+	#event = GroupEvent(user, user, events.PASSWORD, password)
+	#TODO check if this is correct
+	#g.store.add(event)
+	
+    return helpers.success()
 
 
 @group_views.route('/<int:gid>', methods=['GET'])

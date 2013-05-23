@@ -17,6 +17,10 @@ LON_THRESHOLD = 60 # seconds
 #so if lon_sec bellongs to [0,30] => 0
 #   if lon_sec bellongs to [30,60] => 60
 
+clusterHeight = 1000.0
+clusterWidth = 1000.0
+
+
 
 
 # Simple data structure to represent a point.
@@ -47,54 +51,75 @@ def deg_to_rad(angle):
 #added by Vincent and Louis
 # point is a geometry.Point
 def map_location_on_grid(point):
-    lat = point.lat
-    lon = point.lon
 
-    north = lat > 0
-    east = lon > 0
+
+    # lat = point.lat
+    # lon = point.lon
+
+    # north = lat > 0
+    # east = lon > 0
     
-    lat = fabs(lat)
-    lon = fabs(lon)
+    # lat = fabs(lat)
+    # lon = fabs(lon)
 
-    #convert into sexadecimal notation and round
-    lat_deg = floor(lat)
-    lat = (lat - lat_deg)*60
-    lat_min = floor(lat)
-    lat = (lat - lat_min)*60
-    lat_sec = floor(lat)
+    # convert into sexadecimal notation and round
+    # lat_deg = floor(lat)
+    # lat = (lat - lat_deg)*60
+    # lat_min = floor(lat)
+    # lat = (lat - lat_min)*60
+    # lat_sec = floor(lat)
 
-    lon_deg = floor(lon)
-    lon = (lon - lon_deg)*60
-    lon_min = floor(lon)
-    lon = (lon - lon_min)*60
-    lon_sec = floor(lon)
+    # lon_deg = floor(lon)
+    # lon = (lon - lon_deg)*60
+    # lon_min = floor(lon)
+    # lon = (lon - lon_min)*60
+    # lon_sec = floor(lon)
 
-    #rouding according to threshold:
-    if (lat_sec < LAT_THRESHOLD/2):
-        lat_sec = 0
-    elif (lat_sec < 3*LAT_THRESHOLD/2):
-        lat_sec = LAT_THRESHOLD
-    else:
-        lat_sec = 0
-        lat_min += 1
+    # rouding according to threshold:
+    # if (lat_sec < LAT_THRESHOLD/2):
+        # lat_sec = 0
+    # elif (lat_sec < 3*LAT_THRESHOLD/2):
+        # lat_sec = LAT_THRESHOLD
+    # else:
+        # lat_sec = 0
+        # lat_min += 1
 
-    if (lon_sec > LON_THRESHOLD/2):
-        lon_min += 1
-    lon_sec = 0
+    # if (lon_sec > LON_THRESHOLD/2):
+        # lon_min += 1
+    # lon_sec = 0
 
-    #get back to decimal notation:
-    lat = lat_min + (lat_sec / 60.0)
-    lat = lat_deg + (lat / 60.0)
+    # get back to decimal notation:
+    # lat = lat_min + (lat_sec / 60.0)
+    # lat = lat_deg + (lat / 60.0)
 
-    if not north:
-        lat = -lat
+    # if not north:
+        # lat = -lat
 
-    lon = lon_min + (lon_sec / 60.0)
-    lon = lon_deg + (lon / 60.0)
+    # lon = lon_min + (lon_sec / 60.0)
+    # lon = lon_deg + (lon / 60.0)
 
-    if not east:
-        lon = -lon
+    # if not east:
+        # lon = -lon
+       
+    # return Point(lat, lon)
+    
+    lat = point.lat;
+    lon = point.lon;
 
-    return Point(lat, lon)
+    phi = deg2rad(lat)
+    theta = deg2rad(lon)
+    
+    clusterVertAngle = clusterHeight / EARTH_RADIUS
+    
+    clusterLat = floor(phi / clusterVertAngle) * clusterVertAngle
+    clusterLon = floor(theta / (clusterWidth / (EARTH_RADIUS * cos(phi)))) * clusterWidth / (EARTH_RADIUS * cos(clusterLat))
+
+    return Point(rad2deg(clusterLat), rad2deg(clusterLon))
+    
+def deg2rad(angle):
+    return (angle * pi) / 180
+    
+def rad2deg(angle):
+    return (angle * 180) / pi
 
 
