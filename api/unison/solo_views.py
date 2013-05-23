@@ -87,7 +87,7 @@ def update_playlist(uid, plid):
         * tracks [JSONObject]
     """
     # Updates are only allowed if user is author of playlist
-    entry = g.store.find(Playlist, (Playlist.author_id == uid) & Playlist.is_valid).one()
+    entry = g.store.find(Playlist, (Playlist.author_id == uid) & (Playlist.id == plid ) & Playlist.is_valid).one()
     if entry is not None and entry:
         fields = request.form['fields']
         if fields:
