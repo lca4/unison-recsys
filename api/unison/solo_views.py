@@ -48,7 +48,7 @@ def generate_playlist(uid):
 
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
 @helpers.authenticate()
-def list_playlists(uid):
+def list_user_playlists(uid):
     """
     Lists the playlists created by the user uid
     """
@@ -59,7 +59,7 @@ def list_playlists(uid):
     return jsonify(playlists=playlists)
 
 
-@solo_views.route('/playlists', methods=['GET'])
+@solo_views.route('/playlists/shared', methods=['GET'])
 @helpers.authenticate()
 def list_shared_playlists():
     """
