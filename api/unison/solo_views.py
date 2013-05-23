@@ -100,7 +100,7 @@ def update_playlist(uid, plid):
                 elif key == 'image':
                     entry.set(image=unicode(value))
                 elif key == 'local_id':
-                    if value not None:
+                    if value is not None:
                         value = int(value)
                     g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(local_id=value)
                 elif key == 'tracks':
