@@ -18,9 +18,8 @@ LON_THRESHOLD = 60 # seconds
 #   if lon_sec bellongs to [30,60] => 60
 
 clusterHeight = 1000.0
-clusterVertAngle = clusterHeight / EARTH_RADIUS
 clusterWidth = 1000.0
-clusterHoriAngle = clusterWidth / (EARTH_RADIUS * cos(phi))
+
 
 
 
@@ -109,6 +108,9 @@ def map_location_on_grid(point):
 
     phi = deg2rad(lat)
     theta = deg2rad(lon)
+    
+    clusterVertAngle = clusterHeight / EARTH_RADIUS
+    clusterHoriAngle = clusterWidth / (EARTH_RADIUS * cos(phi))
 
     return Point(rad2deg(floor(phi / clusterVertAngle) * clusterVertAngle), rad2deg(floor(theta / clusterHoriAngle) * clusterHoriAngle))
     
