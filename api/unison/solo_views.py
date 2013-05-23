@@ -109,7 +109,7 @@ def update_playlist(uid, plid):
     return None
  
 
-@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
+@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['DELETE'])
 @helpers.authenticate()
 def remove_playlist(uid, plid):
     """
