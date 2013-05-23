@@ -103,8 +103,8 @@ def map_location_on_grid(point):
        
     # return Point(lat, lon)
     
-    lat = location.lat;
-    lon = location.lon;
+    lat = point.lat;
+    lon = point.lon;
 
     phi = deg2rad(lat)
     theta = deg2rad(lon)
