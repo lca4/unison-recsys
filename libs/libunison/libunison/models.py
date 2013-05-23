@@ -161,6 +161,7 @@ class Playlist(Storm):
     tracks = JSON()
     size = Int()
     seeds = JSON()
+    options = JSON()
     features = Unicode()
     avg_rating = Float()
     is_valid = Bool(name='valid')
@@ -171,11 +172,12 @@ class Playlist(Storm):
     
     #TODO add author_name
     
-    def __init__(self, author, title, size, seeds, features, tracks, is_valid=True, is_shared=False, avg_rating=None):
+    def __init__(self, author, title, size, seeds, options, features, tracks, is_valid=True, is_shared=False, avg_rating=None):
         self.author = author
         self.title = title
         self.size = size
         self.seeds = seeds
+        self.options = options
         self.features = features
         self.tracks = tracks
         self.is_valid = is_valid

@@ -53,7 +53,8 @@ def list_user_playlists(uid):
     Lists the playlists created by the user uid
     """
     playlists = list()
-    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid))
+    # Don't show playlists still stored on phone (aka local_id is set)
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid & (PllibEntry.local_id is None)))
     for playlist in rows[:MAX_PLAYLISTS]:
         playlists.append(to_dict(playlist))
     return jsonify(playlists=playlists)
@@ -65,9 +66,11 @@ def list_shared_playlists():
     """
     Lists the playlists available to everyone.
     """
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-    return None
+    playlists = list()
+    rows = sorted(g.store.find(Playlist, (Playlist.author_id != uid) & Playlist.is_valid & Playlist.is_shared))
+    for playlist in rows[:MAX_PLAYLISTS]:
+        playlists.append(to_dict(playlist))
+    return jsonify(playlists=playlists)
 
 
 @solo_views.route('/<int:uid>/playlist/<int:plid>', methods=['POST'])
@@ -78,13 +81,31 @@ def update_playlist(uid, plid):
     Fields to be updted are optional.
     
     Supported fields:
-        * local_id
-        * title
-        * image
-        * tracks
+        * local_id [int]
+        * title [Unicode]
+        * image [Unicode]
+        * tracks [JSONObject]
     """
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    # Updates are only allowed if user is author of playlist
+    entry = g.store.find(Playlist, Playlist.author_id == uid & Playlist.is_valid).one()
+    if entry is not None and entry:
+        fields = request.form['fields']
+        if fields:
+            fields = json.loads(fields)
+            for field in fields.items():
+                key = field[0]
+                value = field[1]
+                if key == 'title':
+                    entry.set(title=unicode(value))
+                elif key == 'image':
+                    entry.set(image=unicode(value))
+                elif key == 'local_id':
+                    g.store.find(PllibEntry, PllibEntry.user_id == uid & PllibEnty.playlist_id == plid & Playlist.is_valid).set(local_id=int(local_id))
+                elif key == 'tracks':
+                    entry.set(tracks=value)
+                print 'solo_views.update_playlist: fields = %s' % fields
+            g.store.commit()
+            return helpers.success()
     return None
  
 
@@ -94,8 +115,20 @@ def remove_playlist(uid, plid):
     """
     Disables the playlist plid from user uid playlist library.
     """
-    #TODO
-    raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    g.store.find(PllibEntry, PllibEntry.user_id == uid & PllibEntry.playlist_id == plid & PllibEntry.is_valid).set(is_valid=False)
+    g.store.commit()
+    return helpers.success()
+
+@solo_views.route('/<int:uid>/playlist/<int:plid>/copy', methods=['POST'])
+@helpers.authenticate()
+def copy_playlist(uid, plid):
+    
+    # IDEA
+    # Copy the seeds used to generate the original PL, and generate a PL with
+    # these seeds, such that the PL contains only songs from the user library
+    pl = g.store.find(Playlist, Playlist.id == plid & Playlist.is_valid & Playlist.is_shared).one()
+    if seeds:
+        return jsonify(pl_generator(uid, pl.seeds, pl.options))
     return None
 
 
@@ -341,7 +374,7 @@ def pl_generator(user_id, seeds, options = None):
         
         # Store the playlist in the playlist table
         jsonify(tracks=tracks)
-        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
+        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
         g.store.add(pldb)
         g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
         print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
@@ -351,28 +384,12 @@ def pl_generator(user_id, seeds, options = None):
         pledb = PllibEntry(user_id, pldb.id)
         g.store.add(pledb)
         g.store.flush()
-#         new_playlist = g.store.find(PllibEntry, (PllibEntry.id == pledb.id)).one()
         
         # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
         g.store.commit()
         
         # Craft JSON
         playlistdescriptor = to_dict(pledb)
-#         playlistdescriptor = dict()
-#         playlistdescriptor['author_id'] = pldb.author_id
-#         playlistdescriptor['author_name'] = pldb.author.nickname
-#         playlistdescriptor['gs_playlist_id'] = pldb_id # Playlist.id
-#         playlistdescriptor['title'] = pldb.title
-#         #playlistdescriptor['image'] = pldb.image # not available for now
-#         playlistdescriptor['tracks'] = pldb.tracks
-#         playlistdescriptor['gs_size'] = pldb.size
-#         # Add additional data
-#         playlistdescriptor['gs_creation_time'] = pledb.created.isoformat()
-#         playlistdescriptor['gs_update_time'] = pledb.updated.isoformat()
-#         playlistdescriptor['gs_listeners'] = pldb.listeners
-#         playlistdescriptor['gs_avg_rating'] = pldb.avg_rating
-#         playlistdescriptor['gs_is_shared'] = pldb.is_shared
-#         playlistdescriptor['gs_is_synced'] = pledb.is_synced
         
         print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
         return playlistdescriptor
