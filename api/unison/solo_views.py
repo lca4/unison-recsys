@@ -100,7 +100,9 @@ def update_playlist(uid, plid):
                 elif key == 'image':
                     entry.set(image=unicode(value))
                 elif key == 'local_id':
-                    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEnty.playlist_id == plid) & Playlist.is_valid).set(local_id=int(local_id))
+                    if value not None:
+                        value = int(value)
+                    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(local_id=value)
                 elif key == 'tracks':
                     entry.set(tracks=value)
                 print 'solo_views.update_playlist: fields = %s' % fields
