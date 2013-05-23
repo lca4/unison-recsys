@@ -46,6 +46,146 @@ def generate_playlist(uid):
     return jsonify(pl_generator(uid, seeds, options))
 
 
+@solo_views.route('/<int:uid>/playlists', methods=['GET'])
+@helpers.authenticate()
+def list_user_playlists(uid):
+    """
+    Lists the playlists created by the user uid
+    """
+    playlists = list()
+    # Don't show playlists still stored on phone (aka local_id is set)
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid & (PllibEntry.local_id is None)))
+    for playlist in rows[:MAX_PLAYLISTS]:
+        playlists.append(to_dict(playlist))
+    return jsonify(playlists=playlists)
+
+
+@solo_views.route('/playlists/shared', methods=['GET'])
+@helpers.authenticate()
+def list_shared_playlists():
+    """
+    Lists the playlists available to everyone.
+    """
+    playlists = list()
+    rows = sorted(g.store.find(Playlist, (Playlist.author_id != uid) & Playlist.is_valid & Playlist.is_shared))
+    for playlist in rows[:MAX_PLAYLISTS]:
+        playlists.append(to_dict(playlist))
+    return jsonify(playlists=playlists)
+
+
+@solo_views.route('/<int:uid>/playlist/<int:plid>', methods=['POST'])
+@helpers.authenticate()
+def update_playlist(uid, plid):
+    """
+    Updates the playlist plid from user uid.
+    Fields to be updted are optional.
+    
+    Supported fields:
+        * local_id [int]
+        * title [Unicode]
+        * image [Unicode]
+        * tracks [JSONObject]
+    """
+    # Updates are only allowed if user is author of playlist
+    entry = g.store.find(Playlist, (Playlist.author_id == uid) & (Playlist.id == plid ) & Playlist.is_valid).one()
+    if entry is not None and entry:
+        fields = request.form['fields']
+        if fields:
+            fields = json.loads(fields)
+            for field in fields.items():
+                key = field[0]
+                value = field[1]
+                if key == 'title':
+                    entry.set(title=unicode(value))
+                elif key == 'image':
+                    entry.set(image=unicode(value))
+                elif key == 'local_id':
+                    if value is not None:
+                        value = int(value)
+                    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(local_id=value)
+                elif key == 'tracks':
+                    entry.set(tracks=value)
+                print 'solo_views.update_playlist: fields = %s' % fields
+            g.store.commit()
+            return helpers.success()
+    return None
+ 
+
+@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['DELETE'])
+@helpers.authenticate()
+def remove_playlist(uid, plid):
+    """
+    Disables the playlist plid from user uid playlist library.
+    """
+    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(is_valid=False)
+    g.store.commit()
+    return helpers.success()
+
+@solo_views.route('/<int:uid>/playlist/<int:plid>/copy', methods=['POST'])
+@helpers.authenticate()
+def copy_playlist(uid, plid):
+    
+    # IDEA
+    # Copy the seeds used to generate the original PL, and generate a PL with
+    # these seeds, such that the PL contains only songs from the user library
+    pl = g.store.find(Playlist, (Playlist.id == plid) & Playlist.is_valid & Playlist.is_shared).one()
+    if seeds:
+        return jsonify(pl_generator(uid, pl.seeds, pl.options))
+    return None
+
+
+@solo_views.route('/tags/top', methods=['GET'])
+@helpers.authenticate()
+def list_top_tags():
+    """
+    Lists the top tags 
+    """
+    
+    tags = list()
+    
+    # TESTS
+    tags.append({
+                 'tid': 1,
+                 'name': 'rock',
+                 'ref_id': 1234567890
+                 })
+    tags.append({
+                 'tid': 2,
+                 'name': 'pop',
+                 'ref_id': 1357924680
+                 })
+    tags.append({
+                 'tid': 3,
+                 'name': 'dance',
+                 'ref_id': 2468013579
+                 })
+    tags.append({
+                 'tid': 4,
+                 'name': 'electronic',
+                 'ref_id': 1256903478
+                 })
+    tags.append({
+                 'tid': 5,
+                 'name': 'alternative',
+                 'ref_id': 3478125690
+                 })
+    tags.append({
+                 'tid': 6,
+                 'name': 'disco',
+                 'ref_id': 6789012345
+                 })
+    
+    
+#     store = utils.get_store()
+#     entries = store.find(TopTag, None)
+#     for entry in entries:
+#         #TODO
+#         print TODO
+    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
+    return jsonify(tags=tags)
+
+
+# Class functions (not part of the api itself)
 
 def pl_generator(user_id, seeds, options = None):
     """ Generates a playlist based on the given seeds.
@@ -236,7 +376,7 @@ def pl_generator(user_id, seeds, options = None):
         
         # Store the playlist in the playlist table
         jsonify(tracks=tracks)
-        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
+        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
         g.store.add(pldb)
         g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
         print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
@@ -246,129 +386,16 @@ def pl_generator(user_id, seeds, options = None):
         pledb = PllibEntry(user_id, pldb.id)
         g.store.add(pledb)
         g.store.flush()
-#         new_playlist = g.store.find(PllibEntry, (PllibEntry.id == pledb.id)).one()
         
         # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
         g.store.commit()
         
         # Craft JSON
         playlistdescriptor = to_dict(pledb)
-#         playlistdescriptor = dict()
-#         playlistdescriptor['author_id'] = pldb.author_id
-#         playlistdescriptor['author_name'] = pldb.author.nickname
-#         playlistdescriptor['gs_playlist_id'] = pldb_id # Playlist.id
-#         playlistdescriptor['title'] = pldb.title
-#         #playlistdescriptor['image'] = pldb.image # not available for now
-#         playlistdescriptor['tracks'] = pldb.tracks
-#         playlistdescriptor['gs_size'] = pldb.size
-#         # Add additional data
-#         playlistdescriptor['gs_creation_time'] = pledb.created.isoformat()
-#         playlistdescriptor['gs_update_time'] = pledb.updated.isoformat()
-#         playlistdescriptor['gs_listeners'] = pldb.listeners
-#         playlistdescriptor['gs_avg_rating'] = pldb.avg_rating
-#         playlistdescriptor['gs_is_shared'] = pldb.is_shared
-#         playlistdescriptor['gs_is_synced'] = pledb.is_synced
         
         print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
         return playlistdescriptor
     return None
-
-
-
-
-# @solo_views.route('/<int:uid>/playlist', methods=['POST'])
-# @helpers.authenticate()
-# def create_playlist(uid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-# 
-# 
-# @solo_views.route('/<int:uid>/playlists/<int:pid>', methods=['GET'])
-# @helpers.authenticate(with_user=True)
-# def get_playlist(uid, pid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-# 
-# Returns the list of playlists of user uid
-@solo_views.route('/<int:uid>/playlists', methods=['GET'])
-@helpers.authenticate()
-def list_playlists(uid):
-    playlists = list()
-    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid))
-    for playlist in rows[:MAX_PLAYLISTS]:
-        playlists.append(to_dict(playlist))
-    return jsonify(playlists=playlists)
-
-# 
-# 
-# # Updates the playlist plid from user uid
-# @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-# @helpers.authenticate()
-# def update_playlist(uid, plid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-# 
-# 
-# # Disables the playlist plid from user uid
-# @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['POST'])
-# @helpers.authenticate()
-# def remove_playlist(uid, plid):
-#     #TODO
-#     raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-#     return None
-
-# Returns the list of tags
-@solo_views.route('/tags', methods=['GET'])
-@helpers.authenticate()
-def list_tags():
-    
-    tags = list()
-    
-    # TESTS
-    tags.append({
-                 'tid': 1,
-                 'name': 'rock',
-                 'ref_id': 1234567890
-                 })
-    tags.append({
-                 'tid': 2,
-                 'name': 'pop',
-                 'ref_id': 1357924680
-                 })
-    tags.append({
-                 'tid': 3,
-                 'name': 'dance',
-                 'ref_id': 2468013579
-                 })
-    tags.append({
-                 'tid': 4,
-                 'name': 'electronic',
-                 'ref_id': 1256903478
-                 })
-    tags.append({
-                 'tid': 5,
-                 'name': 'alternative',
-                 'ref_id': 3478125690
-                 })
-    tags.append({
-                 'tid': 6,
-                 'name': 'disco',
-                 'ref_id': 6789012345
-                 })
-    
-    
-#     store = utils.get_store()
-#     entries = store.find(TopTag, None)
-#     for entry in entries:
-#         #TODO
-#         print TODO
-    #raise helpers.BadRequest(errors.MISSING_FIELD, "not yet available")
-    return jsonify(tags=tags)
-
-# Class utility functions (not part of the api itself)
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
 # Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle

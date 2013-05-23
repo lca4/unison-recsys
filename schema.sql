@@ -107,6 +107,7 @@ CREATE TABLE playlist (
   tracks         text, -- JSONArray of lib_entry ids
   listeners      integer DEFAULT 0, -- Number of listeners (users who added this playlist to their own library).
   seeds          text NOT NULL, -- JSONObject
+  options        text, --JSONObject
   features       text NOT NULL, -- Base64 encoded
   avg_rating     real,
   valid          boolean NOT NULL DEFAULT FALSE,
