@@ -214,14 +214,19 @@ def pl_generator(user_id, seeds, options = None):
             - natural [default]
             - ratings
             - proximity
+        * Unrated
+            Available values:
+            - True [default]
+            - False
         * Title
           The given value is the title to be set to the playlist
     """
     
     # Set some default values
-    default_filter = 'rating>=4'
-    default_size = 'probabilistic'
-    default_sort = 'natural'
+    default_filter = 'rating>=3'    # [rating>=3|rating>=4|rating>=5]
+    default_size = 'probabilistic'  # [probabilistic|ratings|proximity]
+    default_sort = 'natural'        # [natural]
+    default_unrated = True          # [True|False]
     default_title = '__unnamed__><((()>' # Reduce probability user chooses the same name 
     
     # Check the input
@@ -296,6 +301,10 @@ def pl_generator(user_id, seeds, options = None):
         except:
             sort = None
         try:
+            unrated = option.value('unrated')
+        except:
+            unrated = None
+        try:
             title = option.value('title')
         except:
             title = None
@@ -303,6 +312,7 @@ def pl_generator(user_id, seeds, options = None):
         filter = None
         size = None
         sort = None
+        unrated = None
         title = None
     # Set default values
     if filter is None:
@@ -311,18 +321,25 @@ def pl_generator(user_id, seeds, options = None):
         size = default_size
     if sort is None:
         sort = default_sort
+    if unrated is None:
+        unsorted = default_unrated
     if title is None:
         title = default_title
 
     
     # Fetch LibEntries
     entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
+    if not unrated:
+        # TODO find if possibility to filter on existing result set entries.
+        entrise = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
     for entry in entries:
         added = False
         dist=0
         if entry.track.features is not None:
             tagvect = utils.decode_features(entry.track.features)
             dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))]))
+            # TODO optimization: filter ASAP, to avoid useless computation
+            # Ideal: filter at find() time
             # Filters
             if filter is not None:
                 if filter == 'rating>=3' :
