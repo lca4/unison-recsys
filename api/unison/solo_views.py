@@ -33,7 +33,7 @@ MAX_PLAYLISTS = 10
 @solo_views.route('/<int:uid>/playlist', methods=['POST'])
 @helpers.authenticate()
 def generate_playlist(uid):
-    """Generate a playlist from given seeds"""
+    """Generates a playlist from given seeds"""
     seeds = request.form['seeds']
     print 'solo_views.generate_playlist: seeds = %s' % seeds
     options = request.form['options'] # Can be missing
@@ -320,7 +320,7 @@ def pl_generator(user_id, seeds, options = None):
     if sort is None:
         sort = default_sort
     if unrated is None:
-        unsorted = default_unrated
+        unrated = default_unrated
     if title is None:
         title = default_title
 
@@ -329,14 +329,14 @@ def pl_generator(user_id, seeds, options = None):
     entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
     if not unrated:
         # TODO find if possibility to filter on existing result set entries.
-        entrise = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
+        entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
     for entry in entries:
         added = False
         dist=0
         if entry.track.features is not None:
             tagvect = utils.decode_features(entry.track.features)
             dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))]))
-            # TODO optimization: filter ASAP, to avoid useless computation
+            # TODO optimization: filter ASAP, to avoid useless computations
             # Ideal: filter at find() time
             # Filters
             if filter is not None:
@@ -391,7 +391,7 @@ def pl_generator(user_id, seeds, options = None):
         
         # Store the playlist in the playlist table
         jsonify(tracks=tracks)
-        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks) # previously: title='playlist_' + str(randint(0, 99))
+        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks)
         g.store.add(pldb)
         g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
         print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
@@ -425,7 +425,7 @@ def pl_randomizer(oldPL):
 def to_dict(pllibentry):
     return {
           'gs_playlist_id': pllibentry.playlist.id,
-          'gs_creation_time': pllibentry.playlist.created.replace(microsecond=0).isoformat(), # The replace(microsecond=0) trick avoid microseconds in iso format
+          'gs_creation_time': pllibentry.playlist.created.replace(microsecond=0).isoformat(), # The replace(microsecond=0) trick avoids microseconds in iso format
           'gs_update_time': pllibentry.playlist.updated.replace(microsecond=0).isoformat(),
           'title': pllibentry.playlist.title,
           'image': pllibentry.playlist.image,
