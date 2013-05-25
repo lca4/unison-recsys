@@ -49,9 +49,7 @@ def generate_playlist(uid):
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
 @helpers.authenticate()
 def list_user_playlists(uid):
-    """
-    Lists the playlists created by the user uid
-    """
+    """Lists the playlists created by the user uid"""
     playlists = list()
     # Don't show playlists still stored on phone (aka local_id is set)
     rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid & (PllibEntry.local_id is None)))
@@ -63,9 +61,7 @@ def list_user_playlists(uid):
 @solo_views.route('/playlists/shared', methods=['GET'])
 @helpers.authenticate()
 def list_shared_playlists():
-    """
-    Lists the playlists available to everyone.
-    """
+    """Lists the playlists available to everyone."""
     playlists = list()
     rows = sorted(g.store.find(Playlist, (Playlist.author_id != uid) & Playlist.is_valid & Playlist.is_shared))
     for playlist in rows[:MAX_PLAYLISTS]:
@@ -78,6 +74,7 @@ def list_shared_playlists():
 def update_playlist(uid, plid):
     """
     Updates the playlist plid from user uid.
+    
     Fields to be updted are optional.
     
     Supported fields:
@@ -124,14 +121,15 @@ def remove_playlist(uid, plid):
 @solo_views.route('/<int:uid>/playlist/<int:plid>/copy', methods=['POST'])
 @helpers.authenticate()
 def copy_playlist(uid, plid):
+    """
+    Copies a shared playlist to the user library.
     
-    # IDEA
-    # Copy the seeds used to generate the original PL, and generate a PL with
-    # these seeds, such that the PL contains only songs from the user library
+    This is not a deep copy, in order to avoid a playlist containing tracks not 
+    available in the user library. To achieve this, a new playlist is generated 
+    based on the seeds and options from the original one.
+    """
     pl = g.store.find(Playlist, (Playlist.id == plid) & Playlist.is_valid & Playlist.is_shared).one()
-    if seeds:
-        return jsonify(pl_generator(uid, pl.seeds, pl.options))
-    return None
+    return jsonify(pl_generator(uid, pl.seeds, pl.options))
 
 
 @solo_views.route('/tags/top', methods=['GET'])
@@ -427,7 +425,7 @@ def pl_randomizer(oldPL):
 def to_dict(pllibentry):
     return {
           'gs_playlist_id': pllibentry.playlist.id,
-          'gs_creation_time': pllibentry.playlist.created.replace(microsecond=0).isoformat(),
+          'gs_creation_time': pllibentry.playlist.created.replace(microsecond=0).isoformat(), # The replace(microsecond=0) trick avoid microseconds in iso format
           'gs_update_time': pllibentry.playlist.updated.replace(microsecond=0).isoformat(),
           'title': pllibentry.playlist.title,
           'image': pllibentry.playlist.image,
