@@ -310,7 +310,7 @@ def pl_generator(user_id, seeds, options = None):
     
     # Get options from input
     if options is not None and options:
-        print 'solo_views.pl_generator: options = %s' % options
+        print 'solo_views.pl_generator.313: options = %s' % options
         options = json.loads(options)
         try:
             filter = options.value('filter')
@@ -352,11 +352,12 @@ def pl_generator(user_id, seeds, options = None):
 
     
     # Fetch LibEntries
-    entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
-    if not unrated:
+    if unrated:
+        entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
+    else:
         # TODO find if possibility to filter on existing result set entries.
         entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
-    if entries is not None and entries:
+    if entries.one() is not None and entries.one():
         for entry in entries:
             added = False
             dist=0
