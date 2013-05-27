@@ -82,6 +82,7 @@ def update_playlist(uid, plid):
         * title [Unicode]
         * image [Unicode]
         * tracks [JSONObject]
+        * delta [JSONObject]
     """
     # Updates are only allowed if user is author of playlist
     entry = g.store.find(Playlist, (Playlist.author_id == uid) & (Playlist.id == plid ) & Playlist.is_valid).one()
@@ -102,6 +103,31 @@ def update_playlist(uid, plid):
                     g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(local_id=value)
                 elif key == 'tracks':
                     entry.set(tracks=value)
+                elif key == 'delta':
+                    # WORK IN PROGRESS
+                    try:
+                        delta = json.loads(value)
+                        delta_type = delta['type']
+                        artist = delta['entry']['artist']
+                        title = delta['entry']['title']
+                        local_id = int(delta['entry']['local_id'])
+                        play_order = int(delta['entry']['play_order'])
+                    except:
+                        raise helpers.BadRequest(errors.INVALID_DELTA,
+                                "not a valid playlist library delta")
+                    current_entries = local_valid_entries(user)
+                    key = hashlib.sha1(artist.encode('utf-8')
+                                       + title.encode('utf-8') + str(local_id)).digest()
+                    if delta_type == 'PUT':
+                        if key not in current_entries:
+                            set_lib_entry(user, artist, title, local_id=local_id)
+                    elif delta_type == 'DELETE':
+                        if key in current_entries:
+                            current_entries[key].is_valid = False
+                    else:
+                        # Unknown delta type.
+                        raise helpers.BadRequest(errors.INVALID_DELTA,
+                                "not a valid library delta")
                 print 'solo_views.update_playlist: fields = %s' % fields
             g.store.commit()
             return helpers.success()
@@ -330,86 +356,87 @@ def pl_generator(user_id, seeds, options = None):
     if not unrated:
         # TODO find if possibility to filter on existing result set entries.
         entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
-    for entry in entries:
-        added = False
-        dist=0
-        if entry.track.features is not None:
-            tagvect = utils.decode_features(entry.track.features)
-            dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))]))
-            # TODO optimization: filter ASAP, to avoid useless computations
-            # Ideal: filter at find() time
-            # Filters
-            if filter is not None:
-                if filter == 'rating>=3' :
-                    if entry.rating >= 3 :
-                        added = True
-                elif filter == 'rating>=4':
-                    if entry.rating >= 4 :
-                        added = True
-                elif filter == 'rating>=5':
-                    if entry.rating >= 5 :
-                        added = True
-            # No filtering
-            else:
-                added = True
-        if added:
-            prob = 1 - dist  # Associate a probability
-            if (size != 'probabilistic') or (size == 'probabilistic' and prob >= random()) :
-                probpl.append((entry, prob))
-    
-    if probpl is not None and probpl:
-        # Randomize the order before reshaping
-        probpl = pl_randomizer(probpl)
+    if entries is not None and entries:
+        for entry in entries:
+            added = False
+            dist=0
+            if entry.track.features is not None:
+                tagvect = utils.decode_features(entry.track.features)
+                dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))]))
+                # TODO optimization: filter ASAP, to avoid useless computations
+                # Ideal: filter at find() time
+                # Filters
+                if filter is not None:
+                    if filter == 'rating>=3' :
+                        if entry.rating >= 3 :
+                            added = True
+                    elif filter == 'rating>=4':
+                        if entry.rating >= 4 :
+                            added = True
+                    elif filter == 'rating>=5':
+                        if entry.rating >= 5 :
+                            added = True
+                # No filtering
+                else:
+                    added = True
+            if added:
+                prob = 1 - dist  # Associate a probability
+                if (size != 'probabilistic') or (size == 'probabilistic' and prob >= random()) :
+                    probpl.append((entry, prob))
         
-        # Here should happen the size reshaping
-        # Idea: parse the size if not probabilistic to fetch the criteria
-        # Criterion could be: [>|<]=XX% of probpl; [>|<]=XX (fixed length);
-        
-        # Sorting
-        if sort is not None and sort:
-            if sort == 'ratings':
-                probpl = sorted(probpl, key=lambda x: x[0].rating)
-            elif sort == 'proximity':
-                probpl = sorted(probpl, key=lambda x: x[1])
-            # Default 'natural' sorting does nothing
-                
-        # Remove the probabilities
-        for pair in probpl:
-            playlist.append(pair[0])
+        if probpl is not None and probpl:
+            # Randomize the order before reshaping
+            probpl = pl_randomizer(probpl)
             
-        # Keep only the relevant fields from the tracks
-        tracks = list()
-        index = 1 # First index
-        for entry in playlist:
-            tracks.append({
-              'artist': entry.track.artist,
-              'title': entry.track.title,
-              'local_id': entry.local_id,
-              'play_order': index # Postion of the track in the playlist, used by android
-            })
-            index = index + 1
-        
-        # Store the playlist in the playlist table
-        jsonify(tracks=tracks)
-        pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks)
-        g.store.add(pldb)
-        g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
-        print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
-        if title == default_title:
-            g.store.find(Playlist, Playlist.id == pldb.id).set(title=u"playlist_%s" % pldb.id)
-        # Add it to the user playlist library
-        pledb = PllibEntry(user_id, pldb.id)
-        g.store.add(pledb)
-        g.store.flush()
-        
-        # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
-        g.store.commit()
-        
-        # Craft JSON
-        playlistdescriptor = to_dict(pledb)
-        
-        print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
-        return playlistdescriptor
+            # Here should happen the size reshaping
+            # Idea: parse the size if not probabilistic to fetch the criteria
+            # Criterion could be: [>|<]=XX% of probpl; [>|<]=XX (fixed length);
+            
+            # Sorting
+            if sort is not None and sort:
+                if sort == 'ratings':
+                    probpl = sorted(probpl, key=lambda x: x[0].rating)
+                elif sort == 'proximity':
+                    probpl = sorted(probpl, key=lambda x: x[1])
+                # Default 'natural' sorting does nothing
+                    
+            # Remove the probabilities
+            for pair in probpl:
+                playlist.append(pair[0])
+                
+            # Keep only the relevant fields from the tracks
+            tracks = list()
+            index = 1 # First index
+            for entry in playlist:
+                tracks.append({
+                  'artist': entry.track.artist,
+                  'title': entry.track.title,
+                  'local_id': entry.local_id,
+                  'play_order': index # Postion of the track in the playlist, used by android
+                })
+                index = index + 1
+            
+            # Store the playlist in the playlist table
+            jsonify(tracks=tracks)
+            pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks)
+            g.store.add(pldb)
+            g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
+            print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
+            if title == default_title:
+                g.store.find(Playlist, Playlist.id == pldb.id).set(title=u"playlist_%s" % pldb.id)
+            # Add it to the user playlist library
+            pledb = PllibEntry(user_id, pldb.id)
+            g.store.add(pledb)
+            g.store.flush()
+            
+            # Make the changes persistent in the DB, see Storm Tutorial: https://storm.canonical.com/Tutorial#Committing
+            g.store.commit()
+            
+            # Craft JSON
+            playlistdescriptor = to_dict(pledb)
+            
+            print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
+            return playlistdescriptor
     return None
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
@@ -440,3 +467,15 @@ def to_dict(pllibentry):
           'user_rating': pllibentry.rating,
           'user_comment': pllibentry.comment
         }
+
+def local_valid_entries(user, plid):
+    entrydict = dict()
+    pl = g.store.find(PllibEntry, (PllibEntry.user.id == user)
+            & (PllibEntry.playlist.id == plid) & PllibEntry.is_local & PllibEntry.is_valid).one()
+    for lib_entry in json.loads(pl.tracks):
+        key = hashlib.sha1(lib_entry.track.artist.encode('utf-8')
+                + lib_entry.track.title.encode('utf-8')
+                + str(lib_entry.local_id)
+                + str(lib_entry.play_order)).digest()
+        entrydict[key] = lib_entry
+    return entrydict
