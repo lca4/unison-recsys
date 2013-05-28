@@ -270,8 +270,8 @@ def pl_generator(user_id, seeds, options = None):
     print 'solo_views.pl_generator: seeds = %s' %(seeds)
     for entry in seeds.items():
         type = entry[0]
-        seedslist = list()
-        seedslist.append(entry[1]) # avoids missinterpreting one-element lists
+        seedslist = entry[1]
+        #seedslist.append(entry[1]) # avoids missinterpreting one-element lists
         print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
@@ -357,7 +357,8 @@ def pl_generator(user_id, seeds, options = None):
     else:
         # TODO find if possibility to filter on existing result set entries.
         entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
-    if entries.one() is not None and entries.one():
+    if entries.any() is not None and entries.any():
+        print 'solo_views.pl_generator.361: found tracks in user library'
         for entry in entries:
             added = False
             dist=0
@@ -438,7 +439,9 @@ def pl_generator(user_id, seeds, options = None):
             
             print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
             return playlistdescriptor
-    raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library, ")
+    else:
+        print 'solo_views.pl_generator.361: not tracks found in user library, raise an exception'
+        raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library, ")
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
 # Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle
