@@ -131,7 +131,7 @@ def update_playlist(uid, plid):
                 print 'solo_views.update_playlist: fields = %s' % fields
             g.store.commit()
             return helpers.success()
-    return None
+    raise helpers.NotFound(errors.IS_EMPTY, "Failed to update the playlist with id %d, please check if user is author.")
  
 
 @solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['DELETE'])
@@ -438,7 +438,7 @@ def pl_generator(user_id, seeds, options = None):
             
             print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
             return playlistdescriptor
-    return None
+    raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library, ")
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
 # Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle
