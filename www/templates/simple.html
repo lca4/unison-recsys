@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Reset your password{% endblock %}
+{% block nav %}{{ gen_nav(None) }}{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <h1>GroupStreamer <small>music recommender for groups</small></h1>
+  </div>
+
+  <div class="row">
+    <div class="span12">
+      {% if error %}
+        <div class="alert alert-error">
+          <button class="close" data-dismiss="alert">&times;</button>
+          <strong>Error</strong> - {{ error }}
+        </div>
+      {% endif %}
+      {% if message %}
+        <p>{{ message }}</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

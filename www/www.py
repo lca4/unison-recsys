@@ -1,5 +1,6 @@
 import libunison.password as password
 import libunison.mail as mail
+import time
 import urllib
 import yaml
 
@@ -108,6 +109,60 @@ def gen_intent(email, pw):
             % (pw_enc, email_enc))
 
 
-@app.route('/m/signup', methods=['POST'])
-def signup():
-    return 
+@app.route('/resetpw', methods=['GET', 'POST'])
+def password_reset():
+    try:
+        uid = int(request.values['uid'])
+        ts = int(request.values['ts'])
+        mac = request.values['mac']
+    except KeyError, ValueError:
+        return redirect(url_for(homepage))
+    if not mail.verify(mac, uid, ts):
+        return render_template('simple.html',
+                error='Could not verify URL parameters')
+    threshold = time.time() - 48 * 3600  # Link is valid 2 days.
+    if ts < threshold:
+        return render_template('simple.html',
+                error='The link has expired.')
+    user = g.store.find(User, uid)
+    if user is None:
+        return render_template('simple.html',
+                error='User not found.')
+    if request.method == 'GET':
+        return render_template('resetpw.html')
+    # Otherwise, we are dealing with a POST request.
+    try:
+        pw = request.form['password']
+        pw2 = request.form['password_repeat']
+    except KeyError:
+        return render_template('resetpw.html',
+                error="please fill out all the fields.")
+    # Check if passwords match.
+    if pw != pw2:
+        return render_template('resetpw.html',
+                error="the passwords don't match.")
+    # Check that the password is good enough.
+    elif not password.is_good_enough(pw):
+        return render_template('resetpw.html', error="passwords need to be "
+                "at least 6 characters long.")
+    user.password = password.encrypt(pw)
+    return render_template('simple.html',
+            message='Your password has been reset.')
+
+
+@app.route('/validate', methods=['GET'])
+def validate():
+    try:
+        uid = int(request.args['uid'])
+        mac = request.args['mac']
+    except KeyError, ValueError:
+        return redirect(url_for(homepage))
+    if not mail.verify(mac, uid):
+        return render_template('simple.html',
+                error='Could not verify URL parameters.')
+    user = g.store.get(User, uid)
+    if user is None:
+        return render_template('simple.html', error='User not found.')
+    user.is_email_valid = True
+    return render_template('simple.html',
+            message='Thank you for validating your account.')

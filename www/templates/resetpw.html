@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Reset your password{% endblock %}
+{% block nav %}{{ gen_nav(None) }}{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <h1>Password forgotten? <small>reset your password</small></h1>
+  </div>
+
+  <div class="row">
+    <div class="span12">
+      {% if error %}
+        <div class="alert alert-error">
+          <button class="close" data-dismiss="alert">&times;</button>
+          <strong>Error</strong> - {{ error }}
+        </div>
+      {% endif %}
+      <form method="post">
+        <input type="hidden" id="uid" name="uid"
+            value="{{ request.values['uid'] }}" />
+        <input type="hidden" id="ts" name="ts"
+            value="{{ request.values['ts'] }}" />
+        <input type="hidden" id="mac" name="mac"
+            value="{{ request.values['mac'] }}" />
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" />
+
+        <label for="email">Confirm password:</label>
+        <input type="password" id="password_repeat" name="password_repeat" />
+
+        <br />
+        <input type="submit" class="btn" value="Submit" />
+      </form>
+    </div>
+  </div>
+{% endblock %}
