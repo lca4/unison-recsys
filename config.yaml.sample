@@ -10,6 +10,11 @@ queue:
 # Last.fm web services.
 lastfm:
   key: deadbeefdeadbeefdeadbeefdeadbeef
+# E-mail settings.
+email:
+  from: email@provider.com
+  key: POSTMARK_API_TEST
+  salt: abcdefghijklmopqrstuvwxyz
 # General config options.
 tagfeats: /path/to/tags/database
 debug: true

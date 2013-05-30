@@ -15,6 +15,10 @@ from flask import Blueprint, request, g, jsonify
 from libunison.models import User, UserTags, Group, Track, LibEntry, GroupEvent
 
 
+# URL format for the link to validate a newly created account.
+CONFIRM_URL = "http://staging.groupstreamer.com/validate?uid=%d&mac=%s"
+
+
 user_views = Blueprint('user_views', __name__)
 
 # @author: Hieu
@@ -121,7 +125,18 @@ def register_user():
     g.store.flush()  # Necessary to get an ID.
     # Default nickname.
     user.nickname = unicode("user%d" % user.id)
+    # Send an e-mail to confirm the address.
+    send_confirmation_mail(user)
     return jsonify(uid=user.id)
+
+
+def send_confirmation_mail(user):
+    """Send a account creation e-mail with a link to validate the address."""
+    mac = mail.sign(user.id)
+    url = CONFIRM_URL % (user.id, mac)
+    msg = "Congratulations on joining GroupStreamer! Please click on the\n"
+    msg += "following link to validate your account:\n\n" + url
+    mail.send(user.email, "", msg)  # TODO check that it gets sent?
 
 
 @user_views.route('/<int:uid>/nickname', methods=['GET'])

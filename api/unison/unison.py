@@ -1,9 +1,13 @@
 #!/usr/bin/env python
+"""Main API controller."""
 
 import helpers
+import libunison.mail as mail
+import time
 import yaml
 
 from flask import Flask, request, g, Response, jsonify
+from libunison.models import User
 from storm.locals import create_database, Store
 
 # Blueprints.
@@ -11,6 +15,10 @@ from user_views import user_views
 from group_views import group_views
 from libentry_views import libentry_views
 from solo_views import solo_views
+
+
+PASSWORD_RESET_URL = ("http://staging.groupstreamer.com/"
+        "resetpw?uid=%d&ts=%d&mac=%s")
 
 
 app = Flask(__name__)
@@ -65,6 +73,7 @@ def handle_not_found(error):
         return response
     return "not found", 404
 
+
 @app.errorhandler(403)
 def handle_forbidden(error):
     if (isinstance(error, helpers.Forbidden)):
@@ -72,6 +81,7 @@ def handle_forbidden(error):
         response.status_code = 403
         return response
     return "forbidden", 403
+
 
 @app.route('/')
 @helpers.authenticate(with_user=True)
@@ -83,6 +93,34 @@ def root(user):
     useful :)
     """
     return jsonify(uid=user.id, nickname=user.nickname, gid=user.group_id)
+
+
+@app.route('resetpw', methods=['POST'])
+def reset_password():
+    """Send an e-mail containing a link to reset the password."""
+    try:
+        email = request.form['email']
+    except KeyError:
+        raise helpers.BadRequest(errors.MISSING_FIELD,
+                "missing e-mail address")
+    user = g.store.find(User, User.email == email).one()
+    if user is None:
+        raise helpers.BadRequest(errors.INVALID_USER,
+                "e-mail address doesn't correspond to any user")
+    # Send an e-mail with a special link.
+    msg = reset_password_email(user.id)
+    mail.send(email, "Password reset", msg)  # TODO check that it went through.
+    return helpers.success()
+
+
+def reset_password_email(uid):
+    ts = int(time.time())  # Current timestamp.
+    mac = mail.sign(uid, ts)  # Message authentication code.
+    url = PASSWORD_RESET_URL % (uid, ts, mac)
+    msg = "You recently asked to reset your GroupStreamer password. "
+    msg += "To complete\nthe reset, please follow this link:\n\n" + url
+    msg += "\n\nDidn't request a password reset? Please ignore this e-mail."
+    return msg
 
 
 if __name__ == '__main__':
