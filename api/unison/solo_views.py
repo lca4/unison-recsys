@@ -134,7 +134,7 @@ def update_playlist(uid, plid):
     raise helpers.NotFound(errors.IS_EMPTY, "Failed to update the playlist with id %d, please check if user is author.")
  
 
-@solo_views.route('/<int:uid>/playlists/<int:plid>', methods=['DELETE'])
+@solo_views.route('/<int:uid>/playlist/<int:plid>', methods=['DELETE'])
 @helpers.authenticate()
 def remove_playlist(uid, plid):
     """
