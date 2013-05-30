@@ -53,7 +53,7 @@ def send(recipient, subject, txt, html=None, dry_run=False):
         data['HtmlBody'] = html
     json_data = json.dumps(data)
     # Talk to Postmark.
-    req = urllib2.Request(ENDPOINT)
+    req = urllib2.Request(API_ENDPOINT)
     req.add_header('Accept', 'application/json')
     req.add_header('Content-Type', 'application/json')
     if dry_run:
@@ -71,7 +71,7 @@ def sign(*values):
     config = uutils.get_config()
     data = "".join(str(val) for val in values)
     mac = hmac.new(config['email']['salt'], data, hashlib.sha256)
-    return b64enc(mac.digest()[:16])
+    return uutils.b64enc(mac.digest()[:16])
 
 
 def verify(mac, *values):

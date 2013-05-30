@@ -6,6 +6,7 @@ import libunison.mail as mail
 import time
 import yaml
 
+from constants import errors
 from flask import Flask, request, g, Response, jsonify
 from libunison.models import User
 from storm.locals import create_database, Store
@@ -95,7 +96,7 @@ def root(user):
     return jsonify(uid=user.id, nickname=user.nickname, gid=user.group_id)
 
 
-@app.route('resetpw', methods=['POST'])
+@app.route('/resetpw', methods=['POST'])
 def reset_password():
     """Send an e-mail containing a link to reset the password."""
     try:

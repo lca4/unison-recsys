@@ -11,6 +11,7 @@ class Namespace(object):
 errors = Namespace()
 errors.MISSING_FIELD = 0x01
 errors.EXISTING_USER = 0x02
+errors.INVALID_USER = 0x12
 errors.INVALID_RATING = 0x03
 errors.INVALID_EMAIL = 0x04
 errors.INVALID_PASSWORD = 0x05
