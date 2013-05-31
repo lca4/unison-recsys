@@ -4,7 +4,7 @@ import time
 import urllib
 import yaml
 
-from flask import Flask, render_template, request, g, redirect
+from flask import Flask, render_template, request, g, redirect, url_for
 from libunison.models import User
 from storm.locals import create_database, Store
 
@@ -116,7 +116,7 @@ def password_reset():
         ts = int(request.values['ts'])
         mac = request.values['mac']
     except KeyError, ValueError:
-        return redirect(url_for(homepage))
+        return redirect(url_for("homepage"))
     if not mail.verify(mac, uid, ts):
         return render_template('simple.html',
                 error='Could not verify URL parameters')
@@ -124,7 +124,7 @@ def password_reset():
     if ts < threshold:
         return render_template('simple.html',
                 error='The link has expired.')
-    user = g.store.find(User, uid)
+    user = g.store.get(User, uid)
     if user is None:
         return render_template('simple.html',
                 error='User not found.')
@@ -156,7 +156,7 @@ def validate():
         uid = int(request.args['uid'])
         mac = request.args['mac']
     except KeyError, ValueError:
-        return redirect(url_for(homepage))
+        return redirect(url_for("homepage"))
     if not mail.verify(mac, uid):
         return render_template('simple.html',
                 error='Could not verify URL parameters.')

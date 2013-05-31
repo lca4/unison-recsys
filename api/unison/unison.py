@@ -18,7 +18,7 @@ from libentry_views import libentry_views
 from solo_views import solo_views
 
 
-PASSWORD_RESET_URL = ("http://staging.groupstreamer.com/"
+PASSWORD_RESET_URL = ("http://www2.groupstreamer.com/"
         "resetpw?uid=%d&ts=%d&mac=%s")
 
 
