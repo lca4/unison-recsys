@@ -26,6 +26,7 @@ errors.NO_CURRENT_TRACK = 0x0d
 #Added by Vincent:
 errors.MISSING_CLUSTER = 0x0e
 errors.FORBIDDEN = 0x0f
+errors.PASSWORD_EXPECTED= 0x10
 #Added by Marc:
 errors.IS_EMPTY = 0x20
 

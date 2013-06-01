@@ -231,8 +231,8 @@ def update_user_group(user, uid):
             password = request.form['password']
             
         except:
-            raise helpers.BadRequest(errors.MISSING_FIELD,
-                    "cannot parse group password")
+            raise helpers.BadRequest(errors.PASSWORD_EXPECTED,
+                    "password expected")
         if password != group.password:
             raise helpers.Forbidden("received an invalid group password")
             
