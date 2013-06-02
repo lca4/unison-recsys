@@ -205,11 +205,11 @@ def update_user_password(user, uid):
     
 def leave_group(user):
     if user.group is not None:
-            if user.group.master == user:
-                user.group.master = None
-            event = GroupEvent(user.group, user, events.LEAVE, None)
-            g.store.add(event)
-        user.group = None
+        if user.group.master == user:
+            user.group.master = None
+        event = GroupEvent(user.group, user, events.LEAVE, None)
+        g.store.add(event)
+    user.group = None
 
 
 @user_views.route('/<int:uid>/group', methods=['PUT', 'DELETE'])
@@ -218,7 +218,7 @@ def update_user_group(user, uid):
     """Join or leave a group."""
     helpers.ensure_users_match(user, uid)
     if request.method == 'DELETE':
-        if 'gid' in request.form && request.form['gid'] != -1:
+        if 'gid' in request.form and request.form['gid'] != -1:
             gid = request.form['gid']
             if user.group is not None and user.group == gid:
                leave_group(user)
