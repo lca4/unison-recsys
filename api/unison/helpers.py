@@ -43,6 +43,9 @@ def ensure_users_match(user, uid):
 
 def success():
     return jsonify(success=True)
+    
+def late_success():
+    return jsonify(success=True,msg='Tried to leave an old group')
 
 
 class BadRequest(werkzeug.exceptions.BadRequest):
