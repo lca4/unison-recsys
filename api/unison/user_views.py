@@ -218,13 +218,14 @@ def update_user_group(user, uid):
     """Join or leave a group."""
     helpers.ensure_users_match(user, uid)
     if request.method == 'DELETE':
-        if 'gid' in request.form and request.form['gid'] != -1:
-            gid = request.form['gid']
+        if 'gid' in request.args and request.args['gid'] != -1:
+            gid = request.args['gid']
             if user.group is not None and user.group == gid:
                leave_group(user)
             else:
                 return helpers.late_success()
         else:
+            # legacy version
             leave_group(user)
         return helpers.success()
     try:
