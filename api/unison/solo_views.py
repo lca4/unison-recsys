@@ -52,7 +52,7 @@ def list_user_playlists(uid):
     """Lists the playlists created by the user uid"""
     playlists = list()
     # Don't show playlists still stored on phone (aka local_id is set)
-    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid & (PllibEntry.local_id is None)))
+    rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid & (PllibEntry.local_id == None)))
     for playlist in rows[:MAX_PLAYLISTS]:
         playlists.append(to_dict(playlist))
     return jsonify(playlists=playlists)
