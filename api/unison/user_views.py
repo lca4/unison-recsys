@@ -250,7 +250,7 @@ def update_user_group(user, uid):
         if user.group is not None:
             if user.group.master == user:
                 # The user was his old group's master.
-                user.group.master == None
+                user.group.master = None
             event = GroupEvent(user.group, user, events.LEAVE, None)
             g.store.add(event)
         user.group = group
