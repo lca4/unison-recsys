@@ -275,7 +275,7 @@ def get_tracks(master, gid):
     
     # The effect of current preferences 
     # calculate sum of dot products of every point with every tag/pref and group by point
-    prefs_ratings_agg = [sum([predict.score_by_tag(ppoint,ppref) for ppref in prefs_features]) for ppoint in points]
+    prefs_ratings_agg = [sum([predict.score_by_tag(ppoint,ppref) for ppref in prefs_features if ppref is not None]) for ppoint in points]
     
     # construct the playlist, decreasing order of preference scores
     playlist_by_pref = [entry for entry, score in sorted(

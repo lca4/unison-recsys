@@ -90,7 +90,10 @@ def aggregate(ratings, mode='mult'):
 #@author: Hieu
 def get_tag_point(tag):
     features,weight = utils.tag_features(tag, None, False)
-    return [x*SCALE for x in features[:DIMENSIONS]]
+    if features is not None:
+        return [x*SCALE for x in features[:DIMENSIONS]]
+    else:
+        return None
 
 def score_by_tag(tag_features, track_features):
     return sum(map(mul, tag_features, track_features))

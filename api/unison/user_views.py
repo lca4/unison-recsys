@@ -37,7 +37,6 @@ def favorite_tags(uid):
     res = list()
     
     usertags = g.store.get(UserTags, uid)
-    usertags = None
     
     if usertags is None:
         track_ids = valid_tracks(uid)
@@ -113,8 +112,7 @@ def update_user_preference(user, uid):
     
     usertags = g.store.get(UserTags, uid)
     if usertags is None:
-        usertags = UserTags(uid,unicode("[]"))
-        usertags.preference = pref
+        usertags = UserTags(uid,unicode("[]"),unicode(pref))
         g.store.add(usertags)
     else:
         usertags.preference = pref
