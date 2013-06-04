@@ -8,15 +8,18 @@ from math import atan2, cos, pi, sin, sqrt, floor, fabs
 # Mean earth radius in meters, according to
 # http://en.wikipedia.org/wiki/Earth_radius#Mean_radius
 EARTH_RADIUS = 6371009
-LAT_THRESHOLD = 30 # seconds
+
+#Used in earlier implementation
+#LAT_THRESHOLD = 30 # seconds
 #so if lat_sec bellongs to [0,15] => 0
 #   if lat_sec bellongs to [15,45] => 30
 #   if lat_sec bellongs to [45,60] => 60
 
-LON_THRESHOLD = 60 # seconds
+#LON_THRESHOLD = 60 # seconds
 #so if lon_sec bellongs to [0,30] => 0
 #   if lon_sec bellongs to [30,60] => 60
 
+#size of a cluster in meters
 clusterHeight = 1000.0
 clusterWidth = 1000.0
 
@@ -48,10 +51,14 @@ def deg_to_rad(angle):
     """Convert an angle from degree to radians."""
     return (2 * pi / 360) * angle
 
+def rad_to_deg(angle):
+    return (angle * 180) / pi
+
 #added by Vincent and Louis
 # point is a geometry.Point
 def map_location_on_grid(point):
 
+    #old implementation:
 
     # lat = point.lat
     # lon = point.lon
@@ -103,23 +110,27 @@ def map_location_on_grid(point):
        
     # return Point(lat, lon)
     
+    #new implementation:
     lat = point.lat;
     lon = point.lon;
 
-    phi = deg2rad(lat)
-    theta = deg2rad(lon)
+    phi = deg_to_rad(lat)
+    theta = deg_to_rad(lon)
     
+    #The distance between two latitudes changes only a little bit depending
+    #on where we are on the map, so we consider it as a constant.
     clusterVertAngle = clusterHeight / EARTH_RADIUS
     
+    # Here we find the position of the nearest cluster.
+    # phi/clusterVertAngle is the rational number of clusters that we need to cross in order to reach the user.
+    # The mapping operation consists of taking the floor of that number, it maps the user to the nearest cluster on his/her
+    # bottom left.
     clusterLat = floor(phi / clusterVertAngle) * clusterVertAngle
+
+    #This formula was derived from the need to adapt the amount of degrees needed to travel a distance of clusterWidth
+    #meters along a specific latitude. The circonference of a given latitude gets smaller when you go in direction of a pole. 
     clusterLon = floor(theta / (clusterWidth / (EARTH_RADIUS * cos(phi)))) * clusterWidth / (EARTH_RADIUS * cos(clusterLat))
 
-    return Point(rad2deg(clusterLat), rad2deg(clusterLon))
+    return Point(rad_to_deg(clusterLat), rad_to_deg(clusterLon))
     
-def deg2rad(angle):
-    return (angle * pi) / 180
-    
-def rad2deg(angle):
-    return (angle * 180) / pi
-
 
