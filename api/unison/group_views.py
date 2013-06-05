@@ -480,13 +480,14 @@ def send_suggest(user):
     else:
         #Create group for cluster if needed:
         if cluster.group_id is None:
-            groupName = u'Autogroup (' + str(cluster_loc.lat) + ', ' + str(cluster_loc.lon) + ')'
+            groupName = ''
             clusterGroup = Group(groupName, is_active=True)
             clusterGroup.automatic = True
             #We need some values added by the database, like the ID.
             clusterGroup = g.store.add(clusterGroup)
             clusterGroup.coordinates = geometry.Point(cluster_loc.lat, cluster_loc.lon) #this value cannot be null when inserted into the DB
             clusterGroup.id = AutoReload
+            clusterGroup.name = u'AutoGroup ' + str(clusterGroup.id)
             #tie the group with the cluster
             cluster.group_id = clusterGroup.id
         else:
