@@ -220,12 +220,15 @@ def update_user_group(user, uid):
     if request.method == 'DELETE':
         if 'gid' in request.args and int(request.args['gid']) != -1:
             gid = int(request.args['gid'])
-            if user.group is not None and user.group == gid:
+            if user.group is not None and user.group_id == gid:
                leave_group(user)
             else:
+                # going to notify the app that it was too late
+                # we are not taking any other action.
                 return helpers.late_success()
         else:
-            # legacy version
+            # legacy version: always remove the user from its
+            # actual group
             leave_group(user)
         return helpers.success()
     try:
