@@ -202,6 +202,14 @@ def update_user_password(user, uid):
                 "password is not satisfactory")
     user.password = password.encrypt(pw)
     return helpers.success()
+    
+def leave_group(user):
+    if user.group is not None:
+        if user.group.master == user:
+            user.group.master = None
+        event = GroupEvent(user.group, user, events.LEAVE, None)
+        g.store.add(event)
+    user.group = None
 
 
 @user_views.route('/<int:uid>/group', methods=['PUT', 'DELETE'])
@@ -210,12 +218,18 @@ def update_user_group(user, uid):
     """Join or leave a group."""
     helpers.ensure_users_match(user, uid)
     if request.method == 'DELETE':
-        if user.group is not None:
-            if user.group.master == user:
-                user.group.master = None
-            event = GroupEvent(user.group, user, events.LEAVE, None)
-            g.store.add(event)
-        user.group = None
+        if 'gid' in request.args and int(request.args['gid']) != -1:
+            gid = int(request.args['gid'])
+            if user.group is not None and user.group_id == gid:
+               leave_group(user)
+            else:
+                # going to notify the app that it was too late
+                # we are not taking any other action.
+                return helpers.late_success()
+        else:
+            # legacy version: always remove the user from its
+            # actual group
+            leave_group(user)
         return helpers.success()
     try:
         gid = int(request.form['gid'])
@@ -229,7 +243,6 @@ def update_user_group(user, uid):
     if group.password is not None:
         try:
             password = request.form['password']
-            
         except:
             raise helpers.BadRequest(errors.PASSWORD_EXPECTED,
                     "password expected")
@@ -240,7 +253,7 @@ def update_user_group(user, uid):
         if user.group is not None:
             if user.group.master == user:
                 # The user was his old group's master.
-                user.group.master == None
+                user.group.master = None
             event = GroupEvent(user.group, user, events.LEAVE, None)
             g.store.add(event)
         user.group = group
