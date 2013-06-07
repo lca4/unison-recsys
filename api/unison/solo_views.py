@@ -227,8 +227,8 @@ def pl_generator(user_id, seeds, options = None):
     Supported options:
         * Filter
             Available values:
-            - rating>=3
-            - rating>=4 [default]
+            - rating>=3 [default]
+            - rating>=4
             - rating>=5
         * Size (to be extended)
             Available value:
@@ -302,7 +302,10 @@ def pl_generator(user_id, seeds, options = None):
         for tagvect in tagsmatrix: # ugly, find something better, like sympy
             vsum += tagvect[i]
             refvect.append(vsum)
-        # TODO normalize
+        # Normalization
+        norm = math.sqrt(sum([x*x for x in refvect]))
+        if norm > 0:
+            refvect = [x / norm for x in refvect]
     if refvect is None or not refvect:
         #TODO Handle error
         print 'solo_views.pl_generator: refvect is None'
@@ -361,10 +364,11 @@ def pl_generator(user_id, seeds, options = None):
         print 'solo_views.pl_generator.361: found tracks in user library'
         for entry in entries:
             added = False
-            dist=0
+            proximity=0 # 0=far away, 1=identical
             if entry.track.features is not None:
-                tagvect = utils.decode_features(entry.track.features)
-                dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))]))
+                tagvect = utils.decode_features(entry.track.features, normalize=True)
+                # Compute cosine similarity (dot product), and "normalize" it in [0,1]
+                proximity = sum( fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))])), 1) / 2
                 # TODO optimization: filter ASAP, to avoid useless computations
                 # Ideal: filter at find() time
                 # Filters
@@ -382,7 +386,7 @@ def pl_generator(user_id, seeds, options = None):
                 else:
                     added = True
             if added:
-                prob = 1 - dist  # Associate a probability
+                prob = proximity  # Associate a probability
                 if (size != 'probabilistic') or (size == 'probabilistic' and prob >= random()) :
                     probpl.append((entry, prob))
         
@@ -400,7 +404,7 @@ def pl_generator(user_id, seeds, options = None):
                     probpl = sorted(probpl, key=lambda x: x[0].rating)
                 elif sort == 'proximity':
                     probpl = sorted(probpl, key=lambda x: x[1])
-                # Default 'natural' sorting does nothing
+                # Default: 'natural' sorting, does nothing (aka random)
                     
             # Remove the probabilities
             for pair in probpl:
