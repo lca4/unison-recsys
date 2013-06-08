@@ -19,7 +19,7 @@ from flask import Blueprint, request, g, jsonify
 from operator import itemgetter
 from storm.expr import Desc, In
 
-from math import fabs
+from math import fabs, sqrt
 from random import randint, random, choice
 
 from libunison.models import User, LibEntry, Playlist, PllibEntry, TopTag
@@ -303,9 +303,7 @@ def pl_generator(user_id, seeds, options = None):
             vsum += tagvect[i]
             refvect.append(vsum)
         # Normalization
-        norm = math.sqrt(sum([x*x for x in refvect]))
-        if norm > 0:
-            refvect = [x / norm for x in refvect]
+        refvect = normalize(refvect)
     if refvect is None or not refvect:
         #TODO Handle error
         print 'solo_views.pl_generator: refvect is None'
@@ -367,6 +365,8 @@ def pl_generator(user_id, seeds, options = None):
             proximity=0 # 0=far away, 1=identical
             if entry.track.features is not None:
                 tagvect = utils.decode_features(entry.track.features, normalize=True)
+                # Not sure if tagvect is normalized, so in doubt normalize it.
+                tagvect = normalize(tagvect)
                 # Compute cosine similarity (dot product), and "normalize" it in [0,1]
                 proximity = sum( fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))])), 1) / 2
                 # TODO optimization: filter ASAP, to avoid useless computations
@@ -487,3 +487,10 @@ def local_valid_entries(user, plid):
                 + str(lib_entry.play_order)).digest()
         entrydict[key] = lib_entry
     return entrydict
+
+def normalize(vector):
+    norm = sqrt(sum([x*x for x in vector]))
+    if norm > 0:
+        vector = [x / norm for x in vector]
+    return vector;
+    
