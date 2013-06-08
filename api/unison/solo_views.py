@@ -364,16 +364,21 @@ def pl_generator(user_id, seeds, options = None):
             added = False
             proximity=0 # 0=far away, 1=identical
             if entry.track.features is not None:
-                tagvect = utils.decode_features(entry.track.features, normalize=True)
+                tagvect = utils.decode_features(entry.track.features)
                 # Not sure if tagvect is normalized, so in doubt normalize it.
                 tagvect = normalize(tagvect)
+                print 'solo_views.pl_generator.370: tagvect %s' % tagvect
                 # Compute cosine similarity (dot product), and "normalize" it in [0,1]
-                proximity = sum( fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))])), 1) / 2
+                proximity = sum( [ fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))])), 1 ] ) / 2
                 # TODO optimization: filter ASAP, to avoid useless computations
                 # Ideal: filter at find() time
+                
                 # Filters
                 if filter is not None:
-                    if filter == 'rating>=3' :
+                    if unrated:
+                        if (entry.rating == None) or (entry.rating <= 0):
+                            added = True
+                    elif filter == 'rating>=3' :
                         if entry.rating >= 3 :
                             added = True
                     elif filter == 'rating>=4':
@@ -382,6 +387,7 @@ def pl_generator(user_id, seeds, options = None):
                     elif filter == 'rating>=5':
                         if entry.rating >= 5 :
                             added = True
+                    
                 # No filtering
                 else:
                     added = True
@@ -444,7 +450,7 @@ def pl_generator(user_id, seeds, options = None):
             print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
             return playlistdescriptor
     else:
-        print 'solo_views.pl_generator.361: not tracks found in user library, raise an exception'
+        print 'solo_views.pl_generator.361: no tracks found in user library, raise an exception'
         raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library, ")
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
