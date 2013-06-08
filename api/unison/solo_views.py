@@ -35,9 +35,7 @@ MAX_PLAYLISTS = 10
 def generate_playlist(uid):
     """Generates a playlist from given seeds"""
     seeds = request.form['seeds']
-    print 'solo_views.generate_playlist: seeds = %s' % seeds
     options = request.form['options'] # Can be missing
-    print 'solo_views.generate_playlist: options = %s' % options
     
     if seeds is None:
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
@@ -128,7 +126,6 @@ def update_playlist(uid, plid):
                         # Unknown delta type.
                         raise helpers.BadRequest(errors.INVALID_DELTA,
                                 "not a valid library delta")
-                print 'solo_views.update_playlist: fields = %s' % fields
             g.store.commit()
             return helpers.success()
     raise helpers.NotFound(errors.IS_EMPTY, "Failed to update the playlist with id %d, please check if user is author.")
@@ -267,21 +264,14 @@ def pl_generator(user_id, seeds, options = None):
     refvect = list()
     
     seeds = json.loads(seeds)
-    print 'solo_views.pl_generator: seeds = %s' %(seeds)
     for entry in seeds.items():
         type = entry[0]
         seedslist = entry[1]
         #seedslist.append(entry[1]) # avoids missinterpreting one-element lists
-        print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
-                print 'solo_views.pl_generator: seed is "%s" and of type "%s"' %(seed, type)
                 if type == 'tags':
                     vect, weight = utils.tag_features(seed)
-                    if vect:
-                        print 'solo_views.pl_generator: found tag "%s" in the db' %(seed)
-                    elif vect is None:
-                        print 'solo_views.pl_generator: not found tag "%s" in the db, vect is None' %(seed)
                 # Selection by tracks is not available for now
 #                 if type == 'tracks':
 #                     # TODO: update find condition: UNVALID!
@@ -294,6 +284,7 @@ def pl_generator(user_id, seeds, options = None):
 #                         vect = list()
                 else:
                     #TODO handle error: undefined seed type
+                    print 'solo_views.pl_generator: unknown type of tag: %s' % type
                     vect = list()
             tagsmatrix.append(vect)
         
@@ -311,7 +302,6 @@ def pl_generator(user_id, seeds, options = None):
     
     # Get options from input
     if options is not None and options:
-        print 'solo_views.pl_generator.313: options = %s' % options
         options = json.loads(options)
         try:
             filter = options.value('filter')
@@ -359,7 +349,6 @@ def pl_generator(user_id, seeds, options = None):
         # TODO find if possibility to filter on existing result set entries.
         entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
     if entries.any() is not None and entries.any():
-        print 'solo_views.pl_generator.361: found tracks in user library'
         for entry in entries:
             added = False
             proximity=0 # 0=far away, 1=identical
@@ -367,7 +356,6 @@ def pl_generator(user_id, seeds, options = None):
                 tagvect = utils.decode_features(entry.track.features)
                 # Not sure if tagvect is normalized, so in doubt normalize it.
                 tagvect = normalize(tagvect)
-                print 'solo_views.pl_generator.370: tagvect %s' % tagvect
                 # Compute cosine similarity (dot product), and "normalize" it in [0,1]
                 proximity = sum( [ fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))])), 1 ] ) / 2
                 # TODO optimization: filter ASAP, to avoid useless computations
@@ -433,7 +421,6 @@ def pl_generator(user_id, seeds, options = None):
             pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks)
             g.store.add(pldb)
             g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
-            print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
             if title == default_title:
                 g.store.find(Playlist, Playlist.id == pldb.id).set(title=u"playlist_%s" % pldb.id)
             # Add it to the user playlist library
