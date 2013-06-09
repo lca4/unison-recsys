@@ -3,11 +3,11 @@
 CREATE TABLE "cluster" (
   id                bigserial PRIMARY KEY,
   position          point NOT NULL,
-  group_id          bigint REFERENCES "group"
+  group_id          bigint UNIQUE REFERENCES "group"
 --  users_in_cluster  bigint
 );
 CREATE INDEX position_idx ON "cluster" USING gist (box(position,position));
-
+CREATE INDEX group_id_idx ON "cluster.group_id"
 
 
 --This table represent the list of users in a cluster

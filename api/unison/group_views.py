@@ -52,7 +52,7 @@ def list_groups():
         userloc = geometry.Point(lat, lon)
         key_fct = lambda r: geometry.distance(userloc, r.coordinates)
     groups = list()
-    rows = sorted(g.store.find(Group, (Group.is_active) & (Group.automatic == False)), key=key_fct) # "not" doesn't work...
+    rows = sorted(g.store.find(Group, (Group.is_active) & (Group.is_automatic == False)), key=key_fct) # "not" doesn't work...
     for group in rows[:MAX_GROUPS]:
         groups.append({
           'gid': group.id,
@@ -126,7 +126,7 @@ def put_new_password(user, gid):
         raise helpers.BadRequest(errors.INVALID_GROUP,
             "group does not exist")
 
-    if user.id != group.master_id or group.automatic:
+    if user.id != group.master_id or group.is_automatic:
         raise helpers.BadRequest(errors.UNAUTHORIZED,
             "not allowed to change group password unless DJ")
 	
@@ -472,7 +472,7 @@ def send_suggest(user):
     
     user.cluster_id = cluster.id
 #    usersInCluster = g.store.find(User, (User.cluster_id == cluster.id))
-    usersInCluster = cluster.users_in_cluster
+    usersInCluster = cluster.users
     size = usersInCluster.count()
     if size < MIN_SUGGESTION_SIZE:
         return jsonify(suggestion=False, clusterId=cluster.id)
@@ -481,7 +481,7 @@ def send_suggest(user):
         if cluster.group_id is None:
             groupName = u''
             clusterGroup = Group(groupName, is_active=True)
-            clusterGroup.automatic = True
+            clusterGroup.is_automatic = True
             #We need some values added by the database, like the ID.
             clusterGroup = g.store.add(clusterGroup)
             clusterGroup.coordinates = geometry.Point(cluster_loc.lat, cluster_loc.lon) #this value cannot be null when inserted into the DB
