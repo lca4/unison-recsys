@@ -19,7 +19,7 @@ from flask import Blueprint, request, g, jsonify
 from operator import itemgetter
 from storm.expr import Desc, In
 
-from math import fabs
+from math import fabs, sqrt
 from random import randint, random, choice
 
 from libunison.models import User, LibEntry, Playlist, PllibEntry, TopTag
@@ -35,9 +35,7 @@ MAX_PLAYLISTS = 10
 def generate_playlist(uid):
     """Generates a playlist from given seeds"""
     seeds = request.form['seeds']
-    print 'solo_views.generate_playlist: seeds = %s' % seeds
     options = request.form['options'] # Can be missing
-    print 'solo_views.generate_playlist: options = %s' % options
     
     if seeds is None:
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
@@ -128,7 +126,6 @@ def update_playlist(uid, plid):
                         # Unknown delta type.
                         raise helpers.BadRequest(errors.INVALID_DELTA,
                                 "not a valid library delta")
-                print 'solo_views.update_playlist: fields = %s' % fields
             g.store.commit()
             return helpers.success()
     raise helpers.NotFound(errors.IS_EMPTY, "Failed to update the playlist with id %d, please check if user is author.")
@@ -227,8 +224,8 @@ def pl_generator(user_id, seeds, options = None):
     Supported options:
         * Filter
             Available values:
-            - rating>=3
-            - rating>=4 [default]
+            - rating>=3 [default]
+            - rating>=4
             - rating>=5
         * Size (to be extended)
             Available value:
@@ -267,21 +264,14 @@ def pl_generator(user_id, seeds, options = None):
     refvect = list()
     
     seeds = json.loads(seeds)
-    print 'solo_views.pl_generator: seeds = %s' %(seeds)
     for entry in seeds.items():
         type = entry[0]
         seedslist = entry[1]
         #seedslist.append(entry[1]) # avoids missinterpreting one-element lists
-        print 'solo_views.pl_generator: type = %s, seedslist = %s' %(type, seedslist)
         if seedslist is not None:
             for seed in seedslist:
-                print 'solo_views.pl_generator: seed is "%s" and of type "%s"' %(seed, type)
                 if type == 'tags':
                     vect, weight = utils.tag_features(seed)
-                    if vect:
-                        print 'solo_views.pl_generator: found tag "%s" in the db' %(seed)
-                    elif vect is None:
-                        print 'solo_views.pl_generator: not found tag "%s" in the db, vect is None' %(seed)
                 # Selection by tracks is not available for now
 #                 if type == 'tracks':
 #                     # TODO: update find condition: UNVALID!
@@ -294,6 +284,7 @@ def pl_generator(user_id, seeds, options = None):
 #                         vect = list()
                 else:
                     #TODO handle error: undefined seed type
+                    print 'solo_views.pl_generator: unknown type of tag: %s' % type
                     vect = list()
             tagsmatrix.append(vect)
         
@@ -302,7 +293,8 @@ def pl_generator(user_id, seeds, options = None):
         for tagvect in tagsmatrix: # ugly, find something better, like sympy
             vsum += tagvect[i]
             refvect.append(vsum)
-        # TODO normalize
+        # Normalization
+        refvect = normalize(refvect)
     if refvect is None or not refvect:
         #TODO Handle error
         print 'solo_views.pl_generator: refvect is None'
@@ -310,7 +302,6 @@ def pl_generator(user_id, seeds, options = None):
     
     # Get options from input
     if options is not None and options:
-        print 'solo_views.pl_generator.313: options = %s' % options
         options = json.loads(options)
         try:
             filter = options.value('filter')
@@ -358,18 +349,24 @@ def pl_generator(user_id, seeds, options = None):
         # TODO find if possibility to filter on existing result set entries.
         entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local & (LibEntry.rating != None) & (LibEntry.rating > 0))
     if entries.any() is not None and entries.any():
-        print 'solo_views.pl_generator.361: found tracks in user library'
         for entry in entries:
             added = False
-            dist=0
+            proximity=0 # 0=far away, 1=identical
             if entry.track.features is not None:
                 tagvect = utils.decode_features(entry.track.features)
-                dist = fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))]))
+                # Not sure if tagvect is normalized, so in doubt normalize it.
+                tagvect = normalize(tagvect)
+                # Compute cosine similarity (dot product), and "normalize" it in [0,1]
+                proximity = sum( [ fabs(sum([refvect[i] * tagvect[i] for i in range(len(tagvect))])), 1 ] ) / 2
                 # TODO optimization: filter ASAP, to avoid useless computations
                 # Ideal: filter at find() time
+                
                 # Filters
                 if filter is not None:
-                    if filter == 'rating>=3' :
+                    if unrated:
+                        if (entry.rating == None) or (entry.rating <= 0):
+                            added = True
+                    elif filter == 'rating>=3' :
                         if entry.rating >= 3 :
                             added = True
                     elif filter == 'rating>=4':
@@ -378,11 +375,12 @@ def pl_generator(user_id, seeds, options = None):
                     elif filter == 'rating>=5':
                         if entry.rating >= 5 :
                             added = True
+                    
                 # No filtering
                 else:
                     added = True
             if added:
-                prob = 1 - dist  # Associate a probability
+                prob = proximity  # Associate a probability
                 if (size != 'probabilistic') or (size == 'probabilistic' and prob >= random()) :
                     probpl.append((entry, prob))
         
@@ -400,7 +398,7 @@ def pl_generator(user_id, seeds, options = None):
                     probpl = sorted(probpl, key=lambda x: x[0].rating)
                 elif sort == 'proximity':
                     probpl = sorted(probpl, key=lambda x: x[1])
-                # Default 'natural' sorting does nothing
+                # Default: 'natural' sorting, does nothing (aka random)
                     
             # Remove the probabilities
             for pair in probpl:
@@ -423,7 +421,6 @@ def pl_generator(user_id, seeds, options = None):
             pldb = Playlist(user_id, unicode(title), len(playlist), seeds, options, unicode(refvect), tracks)
             g.store.add(pldb)
             g.store.flush() # See Storm Tutorial: https://storm.canonical.com/Tutorial#Flushing
-            print 'solo_views.pl_generator: pldb.id = %s' % pldb.id
             if title == default_title:
                 g.store.find(Playlist, Playlist.id == pldb.id).set(title=u"playlist_%s" % pldb.id)
             # Add it to the user playlist library
@@ -440,7 +437,7 @@ def pl_generator(user_id, seeds, options = None):
             print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
             return playlistdescriptor
     else:
-        print 'solo_views.pl_generator.361: not tracks found in user library, raise an exception'
+        print 'solo_views.pl_generator.361: no tracks found in user library, raise an exception'
         raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library, ")
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
@@ -483,3 +480,10 @@ def local_valid_entries(user, plid):
                 + str(lib_entry.play_order)).digest()
         entrydict[key] = lib_entry
     return entrydict
+
+def normalize(vector):
+    norm = sqrt(sum([x*x for x in vector]))
+    if norm > 0:
+        vector = [x / norm for x in vector]
+    return vector;
+    
