@@ -126,6 +126,12 @@ def map_location_on_grid(point):
     # The mapping operation consists of taking the floor of that number, it maps the user to the nearest cluster on his/her
     # bottom left.
     clusterLat = floor(phi / clusterVertAngle) * clusterVertAngle
+    
+    if cos(phi) == 0
+        phi = phi + 0.0001
+        
+    if cos(clusterLat) == 0
+        clusterLat = clusterLat + 0.0001
 
     #This formula was derived from the need to adapt the amount of degrees needed to travel a distance of clusterWidth
     #meters along a specific latitude. The circonference of a given latitude gets smaller when you go in direction of a pole. 
