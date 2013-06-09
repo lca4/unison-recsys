@@ -29,6 +29,7 @@ errors.FORBIDDEN = 0x0f
 errors.PASSWORD_EXPECTED= 0x10
 #Added by Marc:
 errors.IS_EMPTY = 0x20
+errors.OPERATION_FAILED = 0x21
 
 # Group events.
 events = Namespace()

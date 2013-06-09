@@ -39,9 +39,14 @@ def generate_playlist(uid):
     
     if seeds is None:
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
-        raise helpers.BadRequest(errors.MISSING_FIELD, "seeds are missing")
+        raise helpers.BadRequest(errors.MISSING_FIELD, "Seeds are missing")
 
-    return jsonify(pl_generator(uid, seeds, options))
+    playlist = jsonify(pl_generator(uid, seeds, options))
+    if playlist is not None and playlist: 
+        return playlist
+    else:
+        print 'solo_views.generate_playlist: Failed to generate the playlist for user %d with seeds %s and options %s.' % (uid, seeds, options)
+        raise helpers.NotFound(errors.IS_EMPTY, "Failed to generate the playlist" % (uid, seeds, options))
 
 
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
@@ -51,20 +56,28 @@ def list_user_playlists(uid):
     playlists = list()
     # Don't show playlists still stored on phone (aka local_id is set)
     rows = sorted(g.store.find(PllibEntry, (PllibEntry.user == uid) & PllibEntry.is_valid & (PllibEntry.local_id == None)))
-    for playlist in rows[:MAX_PLAYLISTS]:
-        playlists.append(to_dict(playlist))
-    return jsonify(playlists=playlists)
+    if rows is not None and rows:
+        for playlist in rows[:MAX_PLAYLISTS]:
+            playlists.append(to_dict(playlist))
+        return jsonify(playlists=playlists)
+    else:
+        print 'solo_views.list_user_playlists: User %d has no playlist' % uid
+        raise helpers.NotFound(errors.IS_EMPTY, "User has no playlist")
 
-
-@solo_views.route('/playlists/shared', methods=['GET'])
+@solo_views.route('/<int:uid>/playlists/shared', methods=['GET'])
 @helpers.authenticate()
-def list_shared_playlists():
+def list_shared_playlists(uid):
     """Lists the playlists available to everyone."""
     playlists = list()
     rows = sorted(g.store.find(Playlist, (Playlist.author_id != uid) & Playlist.is_valid & Playlist.is_shared))
-    for playlist in rows[:MAX_PLAYLISTS]:
-        playlists.append(to_dict(playlist))
-    return jsonify(playlists=playlists)
+    if rows is not None and rows:
+        for playlist in rows[:MAX_PLAYLISTS]:
+            playlists.append(to_dict(playlist))
+        return jsonify(playlists=playlists)
+    else:
+        print 'solo_views.list_shared_playlists: no shared playlists with user %d' % uid
+        raise helpers.NotFound(errors.IS_EMPTY, "No playlist shared with the user")
+
 
 
 @solo_views.route('/<int:uid>/playlist/<int:plid>', methods=['POST'])
@@ -124,11 +137,13 @@ def update_playlist(uid, plid):
                             current_entries[key].is_valid = False
                     else:
                         # Unknown delta type.
+                        print 'solo_views.update_playlist: invalid delta "%s" for playlist %s' % (delta_type, uid) 
                         raise helpers.BadRequest(errors.INVALID_DELTA,
                                 "not a valid library delta")
             g.store.commit()
             return helpers.success()
-    raise helpers.NotFound(errors.IS_EMPTY, "Failed to update the playlist with id %d, please check if user is author.")
+    print 'solo_views.update_playlist: invalid delta: %s'
+    raise helpers.NotFound(errors.OPERATION_FAILED, "Failed to update the playlist with id %d, please check if user is author." % uid)
  
 
 @solo_views.route('/<int:uid>/playlist/<int:plid>', methods=['DELETE'])
@@ -137,9 +152,13 @@ def remove_playlist(uid, plid):
     """
     Disables the playlist plid from user uid playlist library.
     """
-    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(is_valid=False)
+    removed = g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(is_valid=False)
     g.store.commit()
-    return helpers.success()
+    if removed is not None and removed:
+        return helpers.success()
+    else:
+        print 'solo_views.remove_playlist: Failed to remove playlist %d for user %d' % (plid, uid)
+        raise helpers.NotFound(errors.OPERATION_FAILED, "Failed to remove playlist")
 
 @solo_views.route('/<int:uid>/playlist/<int:plid>/copy', methods=['POST'])
 @helpers.authenticate()
@@ -152,7 +171,12 @@ def copy_playlist(uid, plid):
     based on the seeds and options from the original one.
     """
     pl = g.store.find(Playlist, (Playlist.id == plid) & Playlist.is_valid & Playlist.is_shared).one()
-    return jsonify(pl_generator(uid, pl.seeds, pl.options))
+    playlist = jsonify(pl_generator(uid, pl.seeds, pl.options))
+    if playlist is not None and playlist:
+        return playlist
+    else:
+        print 'solo_views.copy_playlist: copy of playlist %d failed for user %d' % (plid, uid)
+        raise helpers.NotFound(errors.IS_EMPTY, "Failed to copy playlist")
 
 
 @solo_views.route('/tags/top', methods=['GET'])
@@ -434,10 +458,9 @@ def pl_generator(user_id, seeds, options = None):
             # Craft JSON
             playlistdescriptor = to_dict(pledb)
             
-            print 'solo_views.pl_generator: playlistdescriptor = %s' % playlistdescriptor
             return playlistdescriptor
     else:
-        print 'solo_views.pl_generator.361: no tracks found in user library, raise an exception'
+        print 'solo_views.pl_generator: no tracks found in user library for user %s' % user_id
         raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library, ")
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
