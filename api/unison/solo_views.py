@@ -152,13 +152,14 @@ def remove_playlist(uid, plid):
     """
     Disables the playlist plid from user uid playlist library.
     """
-    removed = g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(is_valid=False)
-    g.store.commit()
+    removed = g.store.find(PllibEntry, (PllibEntry.user == uid) & (PllibEntry.playlist == plid) & PllibEntry.is_valid).one()
     if removed is not None and removed:
+        removed.is_valid = False
+        g.store.commit()
         return helpers.success()
     else:
         print 'solo_views.remove_playlist: Failed to remove playlist %d for user %d' % (plid, uid)
-        raise helpers.NotFound(errors.OPERATION_FAILED, "Failed to remove playlist")
+        raise helpers.NotFound(errors.IS_EMPTY, "Failed to find playlist %d for user %d" % (plid, uid))
 
 @solo_views.route('/<int:uid>/playlist/<int:plid>/copy', methods=['POST'])
 @helpers.authenticate()
