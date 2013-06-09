@@ -21,6 +21,8 @@ CREATE TABLE "user" (
   password       text NOT NULL,
   nickname       text,
   group_id       bigint,
+  location       point,
+  location_timestamp timestamp NOT NULL DEFAULT '1970-01-01 00:00:00',
   model          text -- Base64 encoded.
 );
 CREATE INDEX user_group_idx ON "user"(group_id);
@@ -36,11 +38,26 @@ CREATE TABLE "group" (
   name           text NOT NULL,
   coordinates    point NOT NULL, -- Geographic coordinates.
   master         bigint REFERENCES "user",
+  password       text,
+  update_time    timestamp NOT NULL DEFAULT now(),
+  automatic      boolean NOT NULL DEFAULT FALSE,
   active         boolean NOT NULL DEFAULT FALSE
 );
 -- Add the foreign key constraint on user(group_id).
 ALTER TABLE "user" ADD CONSTRAINT group_fk FOREIGN KEY (group_id)
     REFERENCES "group";
+CREATE INDEX automatic_idx ON "group" (automatic;
+
+CREATE TABLE "cluster" (
+  id                bigserial PRIMARY KEY,
+  position          point NOT NULL,
+  group_id          bigint UNIQUE REFERENCES "group"
+--  users_in_cluster  bigint
+);
+CREATE INDEX position_idx ON "cluster" USING gist (box(position,position));
+CREATE INDEX group_id_idx ON "cluster" (group_id);
+ALTER TABLE "user" ADD COLUMN cluster_id bigint REFERENCES "cluster";
+CREATE INDEX cluster_id_idx ON "user" (cluster_id);
 
 
 CREATE TABLE track (

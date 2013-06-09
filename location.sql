@@ -7,7 +7,7 @@ CREATE TABLE "cluster" (
 --  users_in_cluster  bigint
 );
 CREATE INDEX position_idx ON "cluster" USING gist (box(position,position));
-CREATE INDEX group_id_idx ON "cluster.group_id"
+CREATE INDEX group_id_idx ON "cluster" (group_id);
 
 
 --This table represent the list of users in a cluster
