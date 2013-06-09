@@ -46,7 +46,7 @@ CREATE TABLE "group" (
 -- Add the foreign key constraint on user(group_id).
 ALTER TABLE "user" ADD CONSTRAINT group_fk FOREIGN KEY (group_id)
     REFERENCES "group";
-CREATE INDEX automatic_idx ON "group" (automatic;
+CREATE INDEX automatic_idx ON "group" (automatic);
 
 CREATE TABLE "cluster" (
   id                bigserial PRIMARY KEY,
