@@ -6,6 +6,8 @@ import utils
 import math
 import pickle
 
+from numpy.linalg import eig
+
 from operator import itemgetter, mul
 from models import *
 
