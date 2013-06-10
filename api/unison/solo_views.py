@@ -45,7 +45,7 @@ def generate_playlist(uid):
     if playlist is not None and playlist:
         return jsonify(playlist)
     else:
-        print 'solo_views.pl_generator: Could not generate a playlist for user %d from seeds %s with options %s: no tracks found in user library' % (user_id, seeds, options)
+        print 'solo_views.pl_generator: Could not generate a playlist for user %d from seeds %s with options %s: no tracks found in user library' % (uid, seeds, options)
         raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library.")
 
 
@@ -142,7 +142,7 @@ def update_playlist(uid, plid):
                                 "not a valid library delta")
             g.store.commit()
             return helpers.success()
-    print 'solo_views.update_playlist: invalid delta: %s'
+    print 'solo_views.update_playlist: invalid delta'
     raise helpers.NotFound(errors.OPERATION_FAILED, "Failed to update the playlist with id %d, please check if user is author." % uid)
  
 
