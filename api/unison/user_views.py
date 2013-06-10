@@ -48,7 +48,7 @@ def favorite_tags(uid):
                 if track is not None:
                     if track.tags:
                         for tag,weight in eval(track.tags):
-                            tag_dict[tag]=tag_dict.get(tag,0.0)+int(weight)
+                            tag_dict[tag]=tag_dict.get(tag,0.0)+float(weight)
             
             for k, v in tag_dict.items():
                 if v<10.0:
