@@ -30,6 +30,7 @@ errors.PASSWORD_EXPECTED= 0x10
 #Added by Marc:
 errors.IS_EMPTY = 0x20
 errors.OPERATION_FAILED = 0x21
+errors.NO_TAGGED_TRACKS = 0x22
 
 # Group events.
 events = Namespace()

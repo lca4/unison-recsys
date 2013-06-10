@@ -41,13 +41,19 @@ def generate_playlist(uid):
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "Seeds are missing")
 
-    playlist = pl_generator(uid, seeds, options)
-    if playlist is not None and playlist:
-        return jsonify(playlist)
-    else:
-        print 'solo_views.pl_generator: Could not generate a playlist for user %d from seeds %s with options %s: no tracks found in user library' % (uid, seeds, options)
-        raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library.")
-
+    try:
+        playlist = pl_generator(uid, seeds, options)
+        if playlist is not None and playlist:
+            return jsonify(playlist)
+    except helpers.NotFound, nf:
+        if nf.error == errors.IS_EMPTY:
+            print 'solo_views.pl_generator: Could not generate a playlist for user %d from seeds %s with options %s: no tracks found in user library' % (uid, seeds, options)
+            raise helpers.NotFound(errors.IS_EMPTY, nf.msg)
+        elif nf.error == errors.NO_TAGGED_TRACKS:
+            print 'solo_views.pl_generator: user %s has no tagged tracks' % user_id
+            raise helpers.NotFound(errors.NOT_TAGGED_TRACKS, nf.msg)
+        else:
+            print 'solo_views.pl_generator: User %d : Undefined exception: %s with message %s' % (nf.error, nf.msg)
 
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
 @helpers.authenticate()
@@ -366,7 +372,6 @@ def pl_generator(user_id, seeds, options = None):
     if title is None:
         title = default_title
 
-    
     # Fetch LibEntries
     if unrated:
         entries = g.store.find(LibEntry, (LibEntry.user_id == user_id) & LibEntry.is_valid & LibEntry.is_local)
@@ -407,11 +412,12 @@ def pl_generator(user_id, seeds, options = None):
                 # No filtering
                 else:
                     added = True
-            if added:
-                prob = proximity  # Associate a probability
-                if (size != 'probabilistic') or (size == 'probabilistic' and prob >= random()) :
-                    probpl.append((entry, prob))
-        
+                if added:
+                    prob = proximity  # Associate a probability
+                    if (size != 'probabilistic') or (size == 'probabilistic' and prob >= random()) :
+                        probpl.append((entry, prob))
+            else:
+                raise helpers.NotFound(errors.NO_TAGGED_TRACKS, "Could not generate a playlist: no tagged tracks were found.")
         if probpl is not None and probpl:
             # Randomize the order before reshaping
             probpl = pl_randomizer(probpl)
@@ -461,11 +467,9 @@ def pl_generator(user_id, seeds, options = None):
             
             # Craft JSON
             playlistdescriptor = to_dict(pledb)
-            
             return playlistdescriptor
-    return None
-#         print 'solo_views.pl_generator: no tracks found in user library for user %s' % user_id
-#         raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library.")
+    raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library.")
+#     return None
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
 # Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle
