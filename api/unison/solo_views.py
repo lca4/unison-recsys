@@ -388,19 +388,22 @@ def pl_generator(user_id, seeds, options = None):
                 
                 # Filters
                 if filter is not None:
-                    if unrated:
-                        if (entry.rating == None) or (entry.rating <= 0):
+                    if entry.rating == None:
+                        if unrated:
                             added = True
-                    elif filter == 'rating>=3' :
-                        if entry.rating >= 3 :
+                    else:
+                        if unrated and (entry.rating <= 0):
                             added = True
-                    elif filter == 'rating>=4':
-                        if entry.rating >= 4 :
-                            added = True
-                    elif filter == 'rating>=5':
-                        if entry.rating >= 5 :
-                            added = True
-                    
+                        if not added:
+                            if filter == 'rating>=3':
+                                if entry.rating >= 3 :
+                                    added = True
+                            elif filter == 'rating>=4':
+                                if entry.rating >= 4 :
+                                    added = True
+                            elif filter == 'rating>=5':
+                                if entry.rating >= 5 :
+                                    added = True
                 # No filtering
                 else:
                     added = True
@@ -460,8 +463,7 @@ def pl_generator(user_id, seeds, options = None):
             playlistdescriptor = to_dict(pledb)
             
             return playlistdescriptor
-    else:
-        return None
+    return None
 #         print 'solo_views.pl_generator: no tracks found in user library for user %s' % user_id
 #         raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library.")
 
