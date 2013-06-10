@@ -86,3 +86,44 @@ def aggregate(ratings, mode='mult'):
             raise ValueError('mode unknown')
         aggregate.append(track_aggregate)
     return aggregate
+
+#@author: Hieu
+def get_tag_point(tag):
+    features,weight = utils.tag_features(tag, None, False)
+    if features is not None:
+        return [x*SCALE for x in features[:DIMENSIONS]]
+    else:
+        return None
+
+def score_by_tag(tag_features, track_features):
+    return sum(map(mul, tag_features, track_features))
+
+# inverse borda count by sum of rank
+def inverse_borda_rank(ranked_ratings, length):
+    mm = dict()
+    for i in range(0,length):
+        for r in ranked_ratings:
+            mm[r[i]] = mm.get(r[i],0)+i
+    return [entry for entry,score in sorted(mm.items(),key=itemgetter(1), reverse=True)]
+
+# calculate the transition matrix base on borda rank (small trick)
+def transition_matrix(ranked_list_pref_asc):
+    length = len(ranked_list_pref_asc)
+    p = np.matrix(np.zeros((length,length)))
+    for i in range(0,length-1):
+        for j in range(i+1,length):
+            p[ranked_list_pref_asc[i],ranked_list_pref_asc[j]]=1.0/length;
+    sub = np.ones((length,1))-p.sum(axis=1)
+    for i in range(0,length):
+        p[i,i]=sub[i,0]
+    return p
+
+# return stationary probabilities of markov chain
+def markovchain4(p):
+    S,U = eig(p.T)
+    stationary = np.array(U[:,np.where(np.abs(S-1.) < 1e-8)[0][0]].flat)
+    stationary = stationary / np.sum(stationary)
+    return [ss.real for ss in stationary]
+
+#end @author: Hieu
+

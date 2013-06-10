@@ -27,7 +27,8 @@ CREATE INDEX user_group_idx ON "user"(group_id);
 
 CREATE TABLE "usertags" (
   id             bigint PRIMARY KEY,
-  tags           text
+  tags           text,
+  preferences    text
 );
 
 CREATE TABLE "group" (

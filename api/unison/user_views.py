@@ -37,7 +37,7 @@ def favorite_tags(uid):
     res = list()
     
     usertags = g.store.get(UserTags, uid)
-
+    
     if usertags is None:
         track_ids = valid_tracks(uid)
         tag_dict = dict()
@@ -47,12 +47,13 @@ def favorite_tags(uid):
             for id in track_ids:
                 track = g.store.get(Track, id)
                 if track is not None:
-                    for tag in eval(track.tags):
-                        tag_dict[tag[0]]=tag_dict.get(tag[0],[0.0, 0.0, 0.0])
-                        l=tag_dict[tag[0]]
-                        l[1] += tag[1] # term frequency
-                        l[2] += 1      # number of document that the tag occurs
-                    numDoc += 1
+                    if track.tags:
+                        for tag in eval(track.tags):
+                            tag_dict[tag[0]]=tag_dict.get(tag[0],[0.0, 0.0, 0.0])
+                            l=tag_dict[tag[0]]
+                            l[1] += tag[1] # term frequency
+                            l[2] += 1      # number of document that the tag occurs
+                        numDoc += 1
             
             for k, v in tag_dict.items():
                 if v[1]<10 and v[2]<2:
@@ -66,22 +67,22 @@ def favorite_tags(uid):
                 count += 1
                 if count > 10:
                     break
-            tagjson = json.dumps(res)
+            tagjson = unicode(json.dumps(res))
             usertags = UserTags(uid,tagjson)
             g.store.add(usertags)
-            g.store.flush()
     else:
         res=eval(usertags.tags)
     
     if res:
         sumScore = sum([x[1]/x[2] for x in res])
         while len(choices)<2:
-              for t in res:
-                  if t[0] not in choices:
-                      if random.random()<(t[1]/t[2])/sumScore:
-                          choices.append(t[0])
-                          if len(choices)>=2:
-                              break
+            for t in res:
+                if t[0] not in choices:
+#                     if random.random()<(t[1]/t[2])/sumScore:
+                    if random.random()<1.0/len(res):
+                        choices.append(t[0])
+                        if len(choices)>=2:
+                            break
     return choices
 
 
@@ -96,6 +97,28 @@ def get_user_tags(uid):
                 "user does not exist")
     tags = favorite_tags(uid)
     return jsonify(tags=tags)
+
+# @author: Hieu
+@user_views.route('/<int:uid>/pref', methods=['PUT'])
+@helpers.authenticate(with_user=True)
+def update_user_preference(user, uid):
+    """Update the user's current preference."""
+    helpers.ensure_users_match(user, uid)
+    try:
+        pref = request.form['pref']
+    except KeyError:
+        raise helpers.BadRequest(errors.MISSING_FIELD,
+                "missing taste field")
+    
+    usertags = g.store.get(UserTags, uid)
+    if usertags is None:
+        usertags = UserTags(uid,unicode("[]"),unicode(pref))
+        g.store.add(usertags)
+    else:
+        usertags.preference = pref
+    return helpers.success()
+
+# @end-author: Hieu
 
 
 @user_views.route('', methods=['POST'])

@@ -31,11 +31,11 @@ class UserTags(Storm):
     __storm_table__ = 'usertags'
     id = Int(primary=True)
     tags = Unicode()
-    def __init__(self, id, tags=None):
+    preference = Unicode()
+    def __init__(self, id, tags=None, preference=None):
         self.id = id
         self.tags = tags
-
-
+        self.preference = preference
 
 class Group(Storm):
     __storm_table__ = 'group'
