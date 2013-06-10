@@ -42,28 +42,21 @@ def favorite_tags(uid):
         track_ids = valid_tracks(uid)
         tag_dict = dict()
         numDoc = 0
-        # res.append(not track_ids)
         if track_ids:
             for id in track_ids:
                 track = g.store.get(Track, id)
                 if track is not None:
                     if track.tags:
-                        for tag in eval(track.tags):
-                            tag_dict[tag[0]]=tag_dict.get(tag[0],[0.0, 0.0, 0.0])
-                            l=tag_dict[tag[0]]
-                            l[1] += tag[1] # term frequency
-                            l[2] += 1      # number of document that the tag occurs
-                        numDoc += 1
+                        for tag,weight in eval(track.tags):
+                            tag_dict[tag]=tag_dict.get(tag,0.0)+int(weight)
             
             for k, v in tag_dict.items():
                 if v[1]<10 and v[2]<2:
                     del tag_dict[k]
-                else:            
-                    v[0] = v[1]*math.log(numDoc/float(v[2])) #another tf-idf
-        
+
             count = 0
-            for k in sorted(tag_dict.iteritems(), key=operator.itemgetter(1), reverse=True):
-                res.append([k[0],k[1][0],k[1][2]])
+            for k,v in sorted(tag_dict.iteritems(), key=operator.itemgetter(1), reverse=True):
+                res.append([k,v])
                 count += 1
                 if count > 10:
                     break
@@ -74,13 +67,12 @@ def favorite_tags(uid):
         res=eval(usertags.tags)
     
     if res:
-        sumScore = sum([x[1]/x[2] for x in res])
+        sumScore = sum([v for k,v in res])
         while len(choices)<2:
-            for t in res:
-                if t[0] not in choices:
-#                     if random.random()<(t[1]/t[2])/sumScore:
+            for t,v in res:
+                if t not in choices:
                     if random.random()<1.0/len(res):
-                        choices.append(t[0])
+                        choices.append(t)
                         if len(choices)>=2:
                             break
     return choices
