@@ -269,17 +269,17 @@ def get_tracks(master, gid):
 
     #@author: Hieu
     # Get users' current preferences
-    #pref_users = [user.id for user in group.users if user is not None]
-    #prefs = [usertags.preference for usertags in [g.store.get(UserTags,u) for u in pref_users] if usertags is not None and usertags.preference]
-    #prefs_features = [predict.get_tag_point(tag) for tag in prefs]
+    pref_users = [user.id for user in group.users if user is not None]
+    prefs = [usertags.preference for usertags in [g.store.get(UserTags,u) for u in pref_users] if usertags is not None and usertags.preference]
+    prefs_features = [predict.get_tag_point(tag) for tag in prefs]
     
-    ## The effect of current preferences 
-    ## calculate sum of dot products of every point with every tag/pref and group by point
-    #prefs_ratings_agg = [sum([predict.score_by_tag(ppoint,ppref) for ppref in prefs_features if ppref is not None]) for ppoint in points]
-    #
-    ## construct the playlist, decreasing order of preference scores
-    #playlist_by_pref = [entry for entry, score in sorted(
-    #        zip(with_feats, prefs_ratings_agg), key=itemgetter(1), reverse=True)]
+    # The effect of current preferences 
+    # calculate sum of dot products of every point with every tag/pref and group by point
+    prefs_ratings_agg = [sum([predict.score_by_tag(ppoint,ppref) for ppref in prefs_features if ppref is not None]) for ppoint in points]
+    
+    # construct the playlist, decreasing order of preference scores
+    playlist_by_pref = [entry for entry, score in sorted(
+            zip(with_feats, prefs_ratings_agg), key=itemgetter(1), reverse=True)]
     
     # For the users that can be modelled: predict their ratings.
     models = filter(lambda model: model.is_nontrivial(),
@@ -289,48 +289,47 @@ def get_tracks(master, gid):
     if len(models) > 0:
         ratings = [model.score(points) for model in models]
         # obsoleted
-        agg = predict.aggregate(ratings)
-        #mindex = [i for i in range(0,len(points))]
-        #ranked_ratings = [[entry for entry, score in sorted(zip(mindex,r), key=itemgetter(1), reverse=True)] for r in ratings]
-        #
-        ##inverse_borda: list of ascending preferences
-        #inverse_borda = predict.inverse_borda_rank(ranked_ratings, len(mindex))
-        #final_rank = list()
-        #tmp_inverse_borda = inverse_borda
-        #iter = 0
-        #stop = False
-        #while not stop and iter<10000:
-        #    transition_matrix = predict.transition_matrix(inverse_borda)
-        #    stationary = predict.markovchain4(transition_matrix)
-        #    addition = [entry for entry, score in sorted(zip(tmp_inverse_borda, stationary), key=itemgetter(1), reverse=True) if score>0]
-        #    final_rank = final_rank+addition
-        #    tmp_inverse_borda = [x for x in tmp_inverse_borda if x not in addition]
-        #    if not tmp_inverse_borda:
-        #        stop = True
-        #    iter = iter+1
-        #if len(final_rank) < len(points):
-        #    final_rank = final_rank + tmp_inverse_borda
-        #playlist_model = [with_feats[i] for i in final_rank]
+        # agg = predict.aggregate(ratings)
+        
+        ranked_ratings = [[entry for entry, score in sorted(zip(mindex,r), key=itemgetter(1), reverse=True)] for r in ratings]
+        sorted_item_list_asc = [x for x in range(0,len(points))]
+        final_rank = list()
+        iter = 0
+        stop = False
+        while not stop and iter<10000:
+            transition_matrix = predict.transition_matrix(ranked_ratings,sorted_item_list_asc)
+            stationary = predict.markovchain4(transition_matrix)
+            addition = [entry for entry, score in sorted(zip(sorted_item_list_asc, stationary), key=itemgetter(1), reverse=True) if score>0]
+            final_rank = final_rank+addition
+            sorted_item_list_asc = [x for x in sorted_item_list_asc if x not in addition]
+            if not sorted_item_list_asc:
+                stop = True
+            iter = iter+1
+            ranked_ratings = [[x for x in r if x in sorted_item_list_asc] for r in ranked_ratings]
+            
+        if len(final_rank) < len(points):
+            final_rank = final_rank + sorted_item_list_asc
+        playlist_model = [with_feats[i] for i in final_rank]
     else:
         # Not a single user can be modelled! just order the songs randomly.
         agg = range(len(with_feats))
         random.shuffle(agg)
-    # Construct the playlist, decreasing order of scores.
-    playlist_model = [entry for entry, score in sorted(zip(with_feats, agg), key=itemgetter(1), reverse=True)]
+        # Construct the playlist, decreasing order of scores.
+        playlist_model = [entry for entry, score in sorted(zip(with_feats, agg), key=itemgetter(1), reverse=True)]
     
-    ##@author: Hieu
-    ## merge two playlists of preferences and models
-    #entry_dict = dict()
-    #weight = [0.75, 0.25]; #weight(preference,models)
+    #@author: Hieu
+    # merge two playlists of preferences and models
+    entry_dict = dict()
+    weight = [0.75, 0.25]; #weight(preference,models)
     
-    #for i in range (0,len(playlist_model)):
-    #    entry_dict[playlist_model[i]] = weight[1]*(i+1)
-    #for i in range (0,len(playlist_by_pref)):
-    #    entry_dict[playlist_by_pref[i]] += weight[0]*(i+1)
+    for i in range (0,len(playlist_model)):
+        entry_dict[playlist_model[i]] = weight[1]*(i+1)
+    for i in range (0,len(playlist_by_pref)):
+        entry_dict[playlist_by_pref[i]] += weight[0]*(i+1)
     
-    #playlist = [k[0] for k in sorted(entry_dict.iteritems(), key=itemgetter(1), reverse=False)]
-    playlist = playlist_model
-    #@end-author: Hieu 
+    playlist = [k[0] for k in sorted(entry_dict.iteritems(), key=itemgetter(1), reverse=False)]
+    
+    #@end-author: Hieu  
 
     # Randomize songs for which we don't have features.
     random.shuffle(no_feats)

@@ -100,25 +100,33 @@ def get_tag_point(tag):
 def score_by_tag(tag_features, track_features):
     return sum(map(mul, tag_features, track_features))
 
-# inverse borda count by sum of rank
-def inverse_borda_rank(ranked_ratings, length):
-    mm = dict()
-    for i in range(0,length):
-        for r in ranked_ratings:
-            mm[r[i]] = mm.get(r[i],0)+i
-    return [entry for entry,score in sorted(mm.items(),key=itemgetter(1), reverse=True)]
 
-# calculate the transition matrix base on borda rank (small trick)
-def transition_matrix(ranked_list_pref_asc):
-    length = len(ranked_list_pref_asc)
+# calculate the transition matrix
+def transition_matrix(ranked_ratings, sorted_item_list_asc):
+    length = len(sorted_item_list_asc)
+    compdict = dict()
+    for r in ranked_ratings:
+        for i in range(0,length-1):
+            for j in range(i+1,length):
+                if (r[i]<r[j]):
+                    compdict[(r[i],r[j])] = compdict.get((r[i],r[j]),0)-1
+                else:
+                    compdict[(r[j],r[i])] = compdict.get((r[j],r[i]),0)+1
+    
     p = np.matrix(np.zeros((length,length)))
-    for i in range(0,length-1):
-        for j in range(i+1,length):
-            p[ranked_list_pref_asc[i],ranked_list_pref_asc[j]]=1.0/length;
+    for i, vali in enumerate(sorted_item_list_asc):
+        for j, valj in enumerate(sorted_item_list_asc):
+            if vali<valj:
+                if compdict[(vali,valj)]>=0:
+                    p[i,j]=1.0/length
+            elif vali>valj:
+                if compdict[(valj,vali)]<=0:
+                    p[i,j]=1.0/length
     sub = np.ones((length,1))-p.sum(axis=1)
     for i in range(0,length):
         p[i,i]=sub[i,0]
     return p
+
 
 # return stationary probabilities of markov chain
 def markovchain4(p):
