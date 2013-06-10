@@ -51,7 +51,7 @@ def favorite_tags(uid):
                             tag_dict[tag]=tag_dict.get(tag,0.0)+int(weight)
             
             for k, v in tag_dict.items():
-                if v[1]<10 and v[2]<2:
+                if v<10.0:
                     del tag_dict[k]
 
             count = 0
@@ -67,15 +67,15 @@ def favorite_tags(uid):
         res=eval(usertags.tags)
     
     if res:
-        sumScore = sum([v for k,v in res])
         while len(choices)<2:
-            for t,v in res:
-                if t not in choices:
+            for t in res:
+                if t[0] not in choices:
                     if random.random()<1.0/len(res):
-                        choices.append(t)
+                        choices.append(t[0])
                         if len(choices)>=2:
                             break
     return choices
+
 
 
 # @author: Hieu
