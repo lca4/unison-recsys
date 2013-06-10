@@ -34,19 +34,19 @@ MAX_PLAYLISTS = 10
 @helpers.authenticate()
 def generate_playlist(uid):
     """Generates a playlist from given seeds"""
-    seeds = request.form['seeds']
-    options = request.form['options'] # Can be missing
+    seeds = request.form['seeds']       # Mandatory
+    options = request.form['options']   # Optional (can be missing)
     
     if seeds is None:
         print 'solo_views.generate_playlist: BadRequest: seeds missing'
         raise helpers.BadRequest(errors.MISSING_FIELD, "Seeds are missing")
 
-    playlist = jsonify(pl_generator(uid, seeds, options))
-    if playlist is not None and playlist: 
-        return playlist
+    playlist = pl_generator(uid, seeds, options)
+    if playlist is not None and playlist:
+        return jsonify(playlist)
     else:
-        print 'solo_views.generate_playlist: Failed to generate the playlist for user %d with seeds %s and options %s.' % (uid, seeds, options)
-        raise helpers.NotFound(errors.IS_EMPTY, "Failed to generate the playlist" % (uid, seeds, options))
+        print 'solo_views.pl_generator: Could not generate a playlist for user %d from seeds %s with options %s: no tracks found in user library' % (user_id, seeds, options)
+        raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library.")
 
 
 @solo_views.route('/<int:uid>/playlists', methods=['GET'])
@@ -461,8 +461,9 @@ def pl_generator(user_id, seeds, options = None):
             
             return playlistdescriptor
     else:
-        print 'solo_views.pl_generator: no tracks found in user library for user %s' % user_id
-        raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library, ")
+        return None
+#         print 'solo_views.pl_generator: no tracks found in user library for user %s' % user_id
+#         raise helpers.NotFound(errors.IS_EMPTY, "Could not generate a playlist: no tracks were found in user library.")
 
 # From http://smallbusiness.chron.com/randomize-list-python-26724.html
 # Or maybe random.shuffle()? # http://docs.python.org/2/library/random.html#random.shuffle
