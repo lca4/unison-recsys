@@ -160,7 +160,10 @@ def send_confirmation_mail(user):
     msg = "Congratulations on joining GroupStreamer! Please click on the\n"
     msg += "following link to validate your account:\n\n" + url
     # TODO check that it gets sent?
-    mail.send(user.email, "Welcome to GroupStreamer", msg)
+    try:
+        mail.send(user.email, "Welcome to GroupStreamer", msg)
+    except:
+        pass
 
 
 @user_views.route('/<int:uid>/nickname', methods=['GET'])

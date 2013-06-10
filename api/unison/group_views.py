@@ -290,26 +290,25 @@ def get_tracks(master, gid):
         ratings = [model.score(points) for model in models]
         # obsoleted
         # agg = predict.aggregate(ratings)
-        mindex = [i for i in range(0,len(points))]
-        ranked_ratings = [[entry for entry, score in sorted(zip(mindex,r), key=itemgetter(1), reverse=True)] for r in ratings]
         
-        #inverse_borda: list of ascending preferences
-        inverse_borda = predict.inverse_borda_rank(ranked_ratings, len(mindex))
+        ranked_ratings = [[entry for entry, score in sorted(zip(mindex,r), key=itemgetter(1), reverse=True)] for r in ratings]
+        sorted_item_list_asc = [x for x in range(0,len(points))]
         final_rank = list()
-        tmp_inverse_borda = inverse_borda
         iter = 0
         stop = False
         while not stop and iter<10000:
-            transition_matrix = predict.transition_matrix(inverse_borda)
+            transition_matrix = predict.transition_matrix(ranked_ratings,sorted_item_list_asc)
             stationary = predict.markovchain4(transition_matrix)
-            addition = [entry for entry, score in sorted(zip(tmp_inverse_borda, stationary), key=itemgetter(1), reverse=True) if score>0]
+            addition = [entry for entry, score in sorted(zip(sorted_item_list_asc, stationary), key=itemgetter(1), reverse=True) if score>0]
             final_rank = final_rank+addition
-            tmp_inverse_borda = [x for x in tmp_inverse_borda if x not in addition]
-            if not tmp_inverse_borda:
+            sorted_item_list_asc = [x for x in sorted_item_list_asc if x not in addition]
+            if not sorted_item_list_asc:
                 stop = True
             iter = iter+1
+            ranked_ratings = [[x for x in r if x in sorted_item_list_asc] for r in ranked_ratings]
+            
         if len(final_rank) < len(points):
-            final_rank = final_rank + tmp_inverse_borda
+            final_rank = final_rank + sorted_item_list_asc
         playlist_model = [with_feats[i] for i in final_rank]
     else:
         # Not a single user can be modelled! just order the songs randomly.
@@ -330,7 +329,7 @@ def get_tracks(master, gid):
     
     playlist = [k[0] for k in sorted(entry_dict.iteritems(), key=itemgetter(1), reverse=False)]
     
-    #@end-author: Hieu 
+    #@end-author: Hieu  
 
     # Randomize songs for which we don't have features.
     random.shuffle(no_feats)

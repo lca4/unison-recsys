@@ -110,7 +110,11 @@ def reset_password():
                 "e-mail address doesn't correspond to any user")
     # Send an e-mail with a special link.
     msg = reset_password_email(user.id)
-    mail.send(email, "Password reset", msg)  # TODO check that it went through.
+    try:
+        # TODO check that it went through.
+        mail.send(email, "Password reset", msg)
+    except:
+        pass
     return helpers.success()
 
 
