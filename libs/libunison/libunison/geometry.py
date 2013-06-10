@@ -127,10 +127,10 @@ def map_location_on_grid(point):
     # bottom left.
     clusterLat = floor(phi / clusterVertAngle) * clusterVertAngle
     
-    if cos(phi) == 0
+    if cos(phi) == 0:
         phi = phi + 0.0001
         
-    if cos(clusterLat) == 0
+    if cos(clusterLat) == 0:
         clusterLat = clusterLat + 0.0001
 
     #This formula was derived from the need to adapt the amount of degrees needed to travel a distance of clusterWidth

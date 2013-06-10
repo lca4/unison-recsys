@@ -47,12 +47,14 @@ class Group(Storm):
     is_active = Bool(name='active')
     password = Unicode()
     updated = DateTime(name='update_time')
-    automatic = Bool()
+    is_automatic = Bool(name='automatic')
 
     # Relationships
     master = Reference(master_id, 'User.id')
     users = ReferenceSet(id, 'User.group_id')
     events = ReferenceSet(id, 'GroupEvent.group_id')
+
+    clusters = ReferenceSet(id, 'Cluster.group_id')
 
     def __init__(self, name=None, is_active=False):
         self.name = name
@@ -152,7 +154,7 @@ class Cluster(Storm):
     group_id = Int()
     # Relationships
     group = Reference(group_id, 'Group.id')
-    users_in_cluster = ReferenceSet(id, 'User.cluster_id')
+    users = ReferenceSet(id, 'User.cluster_id')
 
     def __init__(self, coordinates = None):
         self.coordinates = coordinates
