@@ -29,6 +29,9 @@ solo_views = Blueprint('solo_views', __name__)
 # Maximal number of groups returned when listing groups.
 MAX_PLAYLISTS = 10
 
+# Some internal constants
+DEFAULT_NOT_SET = -1
+
 
 @solo_views.route('/<int:uid>/playlist', methods=['POST'])
 @helpers.authenticate()
@@ -92,7 +95,7 @@ def update_playlist(uid, plid):
     """
     Updates the playlist plid from user uid.
     
-    Fields to be updted are optional.
+    Fields to be updated are optional.
     
     Supported fields:
         * local_id [int]
@@ -105,52 +108,94 @@ def update_playlist(uid, plid):
     entry = g.store.find(Playlist, (Playlist.author_id == uid) & (Playlist.id == plid ) & Playlist.is_valid).one()
     if entry is not None and entry:
         fields = request.form['fields']
-        if fields:
+        if fields is not None and fields:
             fields = json.loads(fields)
-            for field in fields.items():
-                key = field[0]
-                value = field[1]
-                if key == 'title':
-                    entry.set(title=unicode(value))
-                elif key == 'image':
-                    entry.set(image=unicode(value))
-                elif key == 'local_id':
-                    if value is not None:
-                        value = int(value)
-                    g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(local_id=value)
-                elif key == 'tracks':
-                    entry.set(tracks=value)
-                elif key == 'delta':
-                    # WORK IN PROGRESS
-                    try:
-                        delta = json.loads(value)
-                        delta_type = delta['type']
-                        artist = delta['entry']['artist']
-                        title = delta['entry']['title']
-                        local_id = int(delta['entry']['local_id'])
-                        play_order = int(delta['entry']['play_order'])
-                    except:
-                        raise helpers.BadRequest(errors.INVALID_DELTA,
-                                "not a valid playlist library delta")
-                    current_entries = local_valid_entries(user)
-                    key = hashlib.sha1(artist.encode('utf-8')
-                                       + title.encode('utf-8') + str(local_id)).digest()
-                    if delta_type == 'PUT':
-                        if key not in current_entries:
-                            set_lib_entry(user, artist, title, local_id=local_id)
-                    elif delta_type == 'DELETE':
-                        if key in current_entries:
-                            current_entries[key].is_valid = False
-                    else:
-                        # Unknown delta type.
-                        print 'solo_views.update_playlist: invalid delta "%s" for playlist %s' % (delta_type, uid) 
-                        raise helpers.BadRequest(errors.INVALID_DELTA,
-                                "not a valid library delta")
-            g.store.commit()
-            return helpers.success()
+            return update_playlist(uid,plid,fields)
     print 'solo_views.update_playlist: invalid delta'
     raise helpers.NotFound(errors.OPERATION_FAILED, "Failed to update the playlist with id %d, please check if user is author." % uid)
- 
+
+    
+def update_playlist(uid,plid,fields):
+    for field in fields.items():
+        key = field[0]
+        value = field[1]
+        if key == 'title':
+            entry.set(title=unicode(value))
+        elif key == 'image':
+            entry.set(image=unicode(value))
+        elif key == 'local_id':
+            if value is not None:
+                value = int(value)
+            g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == plid) & PllibEntry.is_valid).set(local_id=value)
+        elif key == 'tracks':
+            entry.set(tracks=value)
+        elif key == 'delta':
+            # WORK IN PROGRESS
+            try:
+                delta = json.loads(value)
+                delta_type = delta['type']
+                artist = delta['entry']['artist']
+                title = delta['entry']['title']
+                local_id = int(delta['entry']['local_id'])
+                play_order = int(delta['entry']['play_order'])
+            except:
+                raise helpers.BadRequest(errors.INVALID_DELTA,
+                        "not a valid playlist library delta")
+            current_entries = local_valid_entries(user)
+            key = hashlib.sha1(artist.encode('utf-8')
+                               + title.encode('utf-8') + str(local_id)).digest()
+            if delta_type == 'PUT':
+                if key not in current_entries:
+                    set_lib_entry(user, artist, title, local_id=local_id)
+            elif delta_type == 'DELETE':
+                if key in current_entries:
+                    current_entries[key].is_valid = False
+            else:
+                # Unknown delta type.
+                print 'solo_views.update_playlist: invalid delta "%s" for playlist %s' % (delta_type, plid) 
+                raise helpers.BadRequest(errors.INVALID_DELTA,
+                        "not a valid library delta")
+    g.store.commit()
+    return helpers.success()
+
+@solo_views.route('/<int:uid>/playlists/batch', methods=['POST'])
+@helpers.authenticate()
+def update_library(uid):
+    """Update (add/delete/update playlists) a device's library. """
+    deltas = request.form['deltas']
+    if deltas is not None and deltas:
+        deltas = json.loads(deltas)
+        for delta in deltas.items():
+            entry = g.store.find(PllibEntry, (PllibEntry.user_id == uid) & (PllibEntry.playlist_id == delta_gs_id) & PllibEntry.is_valid).one()
+            if entry is not None and entry.local_id is not None and entry.local_id >= 0:
+                delta_type = delta['type']
+                delta_gs_id = delta['gs_id']
+                if delta_type == 'DELETE':
+                    entry.set(local_id=DEFAULT_NOT_SET)
+                    return helpers.success()
+                elif delta_type == 'UPDATE':
+                    entry.set(playlist.tracks=None)
+                    entry.set(playlist.size=0)
+                    #delta_user_id = delta['user_id']
+                    delta_title = delta['title'] # Could be None
+                    if delta_title is not None and delta_title:
+                        entry.set(playlist.title=delta_title)
+                    track_deltas = delta['track_deltas']
+                    if track_deltas is not None and track_deltas:
+                        for track_delta in track_deltas:
+                            update_playlist(uid, delta_gs_id, track_delta)
+                    return helpers.success()
+                else:
+                    # Unknown delta type.
+                    print 'solo_views.update_library: invalid delta "%s" for playlist %s' % (delta_type, delta_gs_id) 
+                    raise helpers.BadRequest(errors.INVALID_DELTA,
+                            "not a valid library delta")
+            print 'solo_views.update_library: no entry found for playlist %s' % (delta_gs_id) 
+            raise helpers.BadRequest(errors.IS_EMPTY,
+                        "no entry found in user library")
+    #TODO
+    # Idea: make calls to update_playlist
+
 
 @solo_views.route('/<int:uid>/playlist/<int:plid>', methods=['DELETE'])
 @helpers.authenticate()
