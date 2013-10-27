@@ -291,8 +291,9 @@ def get_tracks(master, gid):
         # obsoleted
         # agg = predict.aggregate(ratings)
         
-        ranked_ratings = [[entry for entry, score in sorted(zip(mindex,r), key=itemgetter(1), reverse=True)] for r in ratings]
         sorted_item_list_asc = [x for x in range(0,len(points))]
+        ranked_ratings = [[entry for entry, score in sorted(zip(sorted_item_list_asc,r), key=itemgetter(1), reverse=True)] for r in ratings]
+        
         final_rank = list()
         iter = 0
         stop = False
