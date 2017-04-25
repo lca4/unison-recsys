@@ -26,7 +26,7 @@ def cleanup(interval, verbose, is_dry_run):
                 print "deactivating group %d (%s)" % (group.id, group.name)
             if not is_dry_run:
                 group.is_active = False
-                if group.automatic:
+                if group.is_automatic:
                     for cluster in group.clusters:
                         # There should be only one cluster.
                         cluster.group = None

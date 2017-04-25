@@ -16,7 +16,7 @@ from libunison.models import User, UserTags, Group, Track, LibEntry, GroupEvent
 
 
 # URL format for the link to validate a newly created account.
-CONFIRM_URL = "http://www2.groupstreamer.com/validate?uid=%d&mac=%s"
+CONFIRM_URL = "https://www.groupstreamer.com/validate?uid=%d&mac=%s"
 
 
 user_views = Blueprint('user_views', __name__)
